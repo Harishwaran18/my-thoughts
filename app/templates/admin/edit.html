@@ -1,0 +1,42 @@
+{% extends "base.html" %}
+
+{% block content %}
+<section class="page-head">
+  <h1>{{ post.title if post else title }}</h1>
+</section>
+
+<form method="post" class="post-form">
+  <div class="form-group">
+    <label for="title">Title</label>
+    <input type="text" id="title" name="title" required
+           value="{{ post.title if post else title_text }}">
+  </div>
+
+  <div class="form-group">
+    <label for="tags">Tags <span class="hint">(comma-separated)</span></label>
+    <input type="text" id="tags" name="tags"
+           value="{{ post.tags if post else tags }}">
+  </div>
+
+  <div class="form-group">
+    <label for="content">Content <span class="hint">(Markdown supported)</span></label>
+    <textarea id="content" name="content" rows="20" required>{{ post.content if post else content }}</textarea>
+  </div>
+
+  <div class="form-actions">
+    <a href="{{ url_for('admin') }}" class="btn btn-secondary">Cancel</a>
+    <button type="submit" class="btn">Save Post</button>
+  </div>
+</form>
+
+<div class="markdown-help">
+  <h3>Markdown quick reference</h3>
+  <ul>
+    <li><code># Heading 1</code>, <code>## Heading 2</code></li>
+    <li><code>**bold**</code>, <code>*italic*</code></li>
+    <li><code>[link text](url)</code></li>
+    <li>Code blocks with triple backticks <code>```</code></li>
+    <li><code>- item</code> for lists</li>
+  </ul>
+</div>
+{% endblock %}

@@ -1,0 +1,31 @@
+{% extends "base.html" %}
+
+{% block content %}
+<article class="post-full">
+  <h1 class="post-title">{{ post.title }}</h1>
+  <div class="post-meta">
+    <time>{{ format_date(post.created_at) }}</time>
+    {% if post.tags %}
+      <span class="post-tags-inline">
+        {% for tag in post.tags.split(',') %}
+          {% if tag.strip() %}
+            <a href="{{ url_for('tag', tag=tag.strip()) }}" class="tag">#{{ tag.strip() }}</a>
+          {% endif %}
+        {% endfor %}
+      </span>
+    {% endif %}
+  </div>
+  <div class="post-content">
+    {{ post.content | markdown | safe }}
+  </div>
+
+  <div class="post-footer">
+    <a href="{{ url_for('index') }}" class="back-link">&larr; Back to all posts</a>
+    {% if session.logged_in %}
+      <div class="post-actions">
+        <a href="{{ url_for('admin_edit', post_id=post.id) }}" class="btn btn-sm">Edit</a>
+      </div>
+    {% endif %}
+  </div>
+</article>
+{% endblock %}
