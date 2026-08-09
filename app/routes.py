@@ -46,7 +46,7 @@ GISCUS_REPO = "Harishwaran18/my-thoughts"
 GISCUS_REPO_ID = "R_kgDOTy-6PQ"
 GISCUS_CATEGORY = "Announcements"
 GISCUS_CATEGORY_ID = "DIC_kwDOTy-6Pc4DC_iP"
-GISCUS_ENABLED = False
+GISCUS_ENABLED = True
 
 db.init_db(app)
 app.teardown_appcontext(db.close_db)
