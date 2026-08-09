@@ -1,3 +1,5 @@
+import datetime
+import re
 import secrets
 from functools import wraps
 from flask import (
@@ -9,7 +11,6 @@ from flask import (
     session,
     flash,
     abort,
-    jsonify,
 )
 import markdown
 from pygments.formatters import HtmlFormatter
@@ -24,6 +25,10 @@ app.config["DATABASE"] = db.DATABASE
 ADMIN_USERNAME = "admin"
 ADMIN_PASSWORD = "changeme"
 
+# Author / site identity — edit to personalize
+SITE_AUTHOR = "Harishwaran"
+SITE_TAGLINE = "Thoughts on technology, learning, and the craft of building."
+
 db.init_db(app)
 app.teardown_appcontext(db.close_db)
 
@@ -34,6 +39,15 @@ md = markdown.Markdown(
 
 def render_markdown(text):
     return md.reset().convert(text)
+
+
+def extract_toc(text):
+    """Return an HTML list of headings for the table of contents, or '' if none."""
+    md.reset().convert(text)
+    toc_html = md.toc or ""
+    # The toc extension wraps in a <div class="toc">; we want just the list
+    m = re.search(r"<ul>.*?</ul>", toc_html, re.S)
+    return m.group(0) if m else ""
 
 
 def format_date(date_str):
@@ -47,7 +61,23 @@ def format_date(date_str):
         return date_str[:10] if date_str else ""
 
 
-import datetime  # noqa: E402
+def reading_time(text):
+    """Estimate reading time in minutes from raw markdown text (~200 wpm)."""
+    plain = re.sub(r"[#*`>\-\[\]()!]", " ", text)
+    words = len(plain.split())
+    minutes = max(1, round(words / 200))
+    return minutes
+
+
+def excerpt(text, length=180):
+    """Clean excerpt from markdown content."""
+    # Strip markdown markup, render, then strip tags
+    rendered = md.reset().convert(text)
+    plain = re.sub(r"<[^>]+>", "", rendered)
+    plain = re.sub(r"\s+", " ", plain).strip()
+    if len(plain) <= length:
+        return plain
+    return plain[:length].rsplit(" ", 1)[0] + "\u2026"
 
 
 @app.context_processor
@@ -55,6 +85,11 @@ def inject_globals():
     return {
         "all_tags": db.get_all_tags(),
         "format_date": format_date,
+        "reading_time": reading_time,
+        "excerpt": excerpt,
+        "site_author": SITE_AUTHOR,
+        "site_tagline": SITE_TAGLINE,
+        "now_year": datetime.datetime.utcnow().year,
     }
 
 
@@ -77,7 +112,15 @@ def markdown_filter(text):
 @app.route("/")
 def index():
     posts = db.get_all_posts()
-    return render_template("index.html", posts=posts, title="Home")
+    featured = posts[0] if posts else None
+    rest = posts[1:] if posts else []
+    return render_template(
+        "index.html",
+        posts=posts,
+        featured=featured,
+        rest=rest,
+        title="Home",
+    )
 
 
 @app.route("/post/<slug>")
@@ -85,7 +128,15 @@ def post(slug):
     post = db.get_post(slug)
     if post is None:
         abort(404)
-    return render_template("post.html", post=post, title=post["title"])
+    related = db.get_related_posts(post, limit=3)
+    toc = extract_toc(post["content"])
+    return render_template(
+        "post.html",
+        post=post,
+        related=related,
+        toc=toc,
+        title=post["title"],
+    )
 
 
 @app.route("/tag/<tag>")
@@ -99,6 +150,11 @@ def search():
     q = request.args.get("q", "").strip()
     posts = db.search_posts(q) if q else []
     return render_template("search.html", posts=posts, query=q, title="Search")
+
+
+@app.route("/about")
+def about():
+    return render_template("about.html", title="About")
 
 
 @app.route("/login", methods=["GET", "POST"])

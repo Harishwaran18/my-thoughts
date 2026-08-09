@@ -1,0 +1,44 @@
+{% extends "base.html" %}
+
+{% block content %}
+<section class="about-page">
+  <div class="post-eyebrow">About</div>
+  <h1>Hi, I'm {{ site_author }}.</h1>
+  <p class="lead">{{ site_tagline }}</p>
+
+  <div class="post-content">
+    <p>Welcome to my corner of the internet. This is where I write about the things
+    I'm thinking about &mdash; technology, learning, books, and the slow craft of
+    building things that last.</p>
+
+    <h2>Why I write</h2>
+    <p>Writing is how I think. When I try to explain an idea in words, I find the
+    gaps in my understanding. This blog is a public notebook: a place to work out
+    ideas, share what I learn, and occasionally say something worth your time.</p>
+
+    <blockquote>The best way to learn something deeply is to teach it &mdash; or
+    better, to write about it where someone might read it.</blockquote>
+
+    <h2>What you'll find here</h2>
+    <ul>
+      <li><strong>Essays</strong> &mdash; longer reflections on topics I keep returning to.</li>
+      <li><strong>Notes</strong> &mdash; short observations, links, and half-formed ideas.</li>
+      <li><strong>Build logs</strong> &mdash; things I'm making and what I learn along the way.</li>
+    </ul>
+
+    <h2>Stay in touch</h2>
+    <p>If anything here resonates, I'd love to hear from you. Reach out, share a
+    post, or just say hello. You can use the share buttons at the bottom of each
+    article, or start a conversation wherever you find me online.</p>
+
+    <hr>
+
+    <p><em>This blog is built with Flask, Markdown, and SQLite &mdash; simple tools,
+    kept intentionally small.</em></p>
+  </div>
+
+  <div class="post-footer">
+    <a href="{{ url_for('index') }}" class="back-link">&larr; Back to posts</a>
+  </div>
+</section>
+{% endblock %}

@@ -3,19 +3,22 @@
 <head>
   <meta charset="UTF-8">
   <meta name="viewport" content="width=device-width, initial-scale=1.0">
-  <meta name="description" content="{{ title }} - My Personal Blog">
+  <meta name="description" content="{{ title }} - {{ site_author }}'s personal blog">
   <title>{% block title %}{{ title }}{% endblock %} &middot; My Thoughts</title>
   <link rel="stylesheet" href="{{ url_for('static', filename='css/style.css') }}">
   <link rel="stylesheet" href="{{ url_for('static', filename='css/pygments.css') }}">
   <link rel="preconnect" href="https://fonts.googleapis.com">
-  <link href="https://fonts.googleapis.com/css2?family=Inter:wght@400;500;600;700&family=Lora:ital,wght@0,400;0,500;1,400&display=swap" rel="stylesheet">
+  <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+  <link href="https://fonts.googleapis.com/css2?family=Inter:wght@400;500;600;700&family=Newsreader:ital,opsz,wght@0,6..72,400;0,6..72,500;0,6..72,600;1,6..72,400&family=JetBrains+Mono:wght@400;500&display=swap" rel="stylesheet">
 </head>
 <body>
+  <div class="reading-progress" id="readingProgress"></div>
   <header class="site-header">
-    <div class="container header-inner">
-      <a href="{{ url_for('index') }}" class="logo">My Thoughts</a>
+    <div class="header-inner">
+      <a href="{{ url_for('index') }}" class="logo"><span class="logo-mark"></span>My Thoughts</a>
       <nav class="site-nav">
         <a href="{{ url_for('index') }}">Home</a>
+        <a href="{{ url_for('about') }}">About</a>
         <a href="{{ url_for('search') }}">Search</a>
         {% if session.logged_in %}
           <a href="{{ url_for('admin') }}">Admin</a>
@@ -45,12 +48,38 @@
   </main>
 
   <footer class="site-footer">
-    <div class="container">
-      <p>&copy; {{ now_year if now_year else 2026 }} &middot; A personal space for my thoughts.</p>
+    <div class="footer-grid">
+      <div class="footer-brand">
+        <div class="logo"><span class="logo-mark"></span>My Thoughts</div>
+        <p>{{ site_tagline }} Written by {{ site_author }}.</p>
+      </div>
+      <div class="footer-col">
+        <h4>Explore</h4>
+        <ul>
+          <li><a href="{{ url_for('index') }}">All posts</a></li>
+          <li><a href="{{ url_for('about') }}">About</a></li>
+          <li><a href="{{ url_for('search') }}">Search</a></li>
+        </ul>
+      </div>
+      <div class="footer-col">
+        <h4>Tags</h4>
+        <ul>
+          {% for tag, count in (all_tags | dictsort(by='value', reverse=true))[:5] %}
+            <li><a href="{{ url_for('tag', tag=tag) }}">#{{ tag }}</a></li>
+          {% else %}
+            <li><em>None yet</em></li>
+          {% endfor %}
+        </ul>
+      </div>
+    </div>
+    <div class="footer-bottom">
+      <span>&copy; {{ now_year }} {{ site_author }} &middot; My Thoughts</span>
+      <span>Built with Flask &amp; Markdown</span>
     </div>
   </footer>
 
   <script src="{{ url_for('static', filename='js/theme.js') }}"></script>
+  <script src="{{ url_for('static', filename='js/main.js') }}"></script>
   {% block scripts %}{% endblock %}
 </body>
 </html>
