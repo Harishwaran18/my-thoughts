@@ -1,0 +1,54 @@
+{% extends "base.html" %}
+
+{% block content %}
+<section class="page-head">
+  <h1>Explore by tag</h1>
+  <a href="{{ url_for('index') }}" class="back-link">&larr; Back home</a>
+</section>
+
+<div class="tag-cloud-page">
+  {% for tag, count in tags.items() %}
+  <div class="tag-cloud-item">
+    <a href="{{ url_for('tag', tag=tag) }}" class="tag-cloud-link" style="font-size: {{ 0.9 + (count * 0.18) }}rem;">
+      #{{ tag }}
+      <span class="tag-cloud-count">{{ count }}</span>
+    </a>
+  </div>
+  {% endfor %}
+</div>
+
+{% if tags %}
+<section class="page-section" style="padding-top: 40px;">
+  <div class="section-head">
+    <span class="section-num">&lowast;</span>
+    <h2 class="section-title">All posts by tag</h2>
+  </div>
+  {% for tag, count in tags.items() %}
+  <div class="tag-group">
+    <h3 class="tag-group-title">
+      <a href="{{ url_for('tag', tag=tag) }}">#{{ tag }}</a>
+      <span class="tag-group-count">{{ count }} post{{ '' if count == 1 else 's' }}</span>
+    </h3>
+    <div class="post-list">
+      {% for post in posts_by_tag[tag] %}
+      <article class="post-card reveal">
+        <h2><a href="{{ url_for('post', slug=post.slug) }}">{{ post.title }}</a></h2>
+        <div class="post-meta">
+          <time>{{ format_date(post.created_at) }}</time>
+          <span class="dot">&middot;</span>
+          <span class="reading-time">{{ reading_time(post.content) }} min read</span>
+        </div>
+        <p class="post-excerpt">{{ excerpt(post.content) }}</p>
+        <a href="{{ url_for('post', slug=post.slug) }}" class="read-more">Read more <span class="arrow">&rarr;</span></a>
+      </article>
+      {% endfor %}
+    </div>
+  </div>
+  {% endfor %}
+</section>
+{% else %}
+<div class="empty-state">
+  <p>No tags yet.</p>
+</div>
+{% endif %}
+{% endblock %}

@@ -3,19 +3,49 @@
 <head>
   <meta charset="UTF-8">
   <meta name="viewport" content="width=device-width, initial-scale=1.0">
-  <meta name="description" content="{{ title }} - My Personal Blog">
+  <meta name="description" content="{{ description | default(site_tagline) }}">
+
+  <!-- Open Graph / Facebook / WhatsApp -->
+  <meta property="og:type" content="{{ og_type | default('website') }}">
+  <meta property="og:site_name" content="My Thoughts">
+  <meta property="og:title" content="{{ title }}">
+  <meta property="og:description" content="{{ description | default(site_tagline) }}">
+  <meta property="og:url" content="{{ site_url }}{{ request.path }}">
+  {% if og_image_url %}
+    <meta property="og:image" content="{{ og_image_url }}">
+    <meta property="og:image:width" content="1200">
+    <meta property="og:image:height" content="630">
+  {% else %}
+    <meta property="og:image" content="{{ site_url }}/og/default.png">
+  {% endif %}
+
+  <!-- Twitter / X -->
+  <meta name="twitter:card" content="summary_large_image">
+  <meta name="twitter:title" content="{{ title }}">
+  <meta name="twitter:description" content="{{ description | default(site_tagline) }}">
+  <meta name="twitter:image" content="{{ og_image_url | default(site_url + '/og/default.png') }}">
+
+  <link rel="canonical" href="{{ site_url }}{{ request.path }}">
+  <link rel="icon" href="{{ url_for('favicon') }}">
+  <link rel="manifest" href="{{ url_for('manifest') }}">
+  <link rel="alternate" type="application/rss+xml" title="My Thoughts" href="{{ site_url }}/feed.xml">
+  <meta name="theme-color" content="#b45309">
   <title>{% block title %}{{ title }}{% endblock %} &middot; My Thoughts</title>
   <link rel="stylesheet" href="{{ url_for('static', filename='css/style.css') }}">
   <link rel="stylesheet" href="{{ url_for('static', filename='css/pygments.css') }}">
   <link rel="preconnect" href="https://fonts.googleapis.com">
-  <link href="https://fonts.googleapis.com/css2?family=Inter:wght@400;500;600;700&family=Lora:ital,wght@0,400;0,500;1,400&display=swap" rel="stylesheet">
+  <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+  <link href="https://fonts.googleapis.com/css2?family=Inter:wght@400;500;600;700&family=Newsreader:ital,opsz,wght@0,6..72,400;0,6..72,500;0,6..72,600;1,6..72,400&family=JetBrains+Mono:wght@400;500&display=swap" rel="stylesheet">
 </head>
 <body>
+  <div class="reading-progress" id="readingProgress"></div>
   <header class="site-header">
-    <div class="container header-inner">
-      <a href="{{ url_for('index') }}" class="logo">My Thoughts</a>
+    <div class="header-inner">
+      <a href="{{ url_for('index') }}" class="logo"><span class="logo-mark"></span>My Thoughts</a>
       <nav class="site-nav">
-        <a href="{{ url_for('index') }}">Home</a>
+        <a href="{{ url_for('index') }}#about">About</a>
+        <a href="{{ url_for('index') }}#writing">Writing</a>
+        <a href="{{ url_for('tags_page') }}">Tags</a>
         <a href="{{ url_for('search') }}">Search</a>
         {% if session.logged_in %}
           <a href="{{ url_for('admin') }}">Admin</a>
@@ -23,10 +53,17 @@
         {% else %}
           <a href="{{ url_for('login') }}">Login</a>
         {% endif %}
-        <button class="theme-toggle" id="themeToggle" aria-label="Toggle theme">
-          <span class="theme-icon-light">&#9728;</span>
-          <span class="theme-icon-dark">&#9789;</span>
-        </button>
+        <div class="theme-switcher" id="themeSwitcher" role="group" aria-label="Theme">
+          <button data-theme-set="light" aria-label="Light theme" title="Light">
+            <svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><circle cx="12" cy="12" r="5"/><path d="M12 1v2M12 21v2M4.22 4.22l1.42 1.42M18.36 18.36l1.42 1.42M1 12h2M21 12h2M4.22 19.78l1.42-1.42M18.36 5.64l1.42-1.42"/></svg>
+          </button>
+          <button data-theme-set="auto" aria-label="Auto theme" title="Auto (time of day)">
+            <svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><circle cx="12" cy="12" r="9"/><path d="M12 3a9 9 0 010 18z" fill="currentColor"/></svg>
+          </button>
+          <button data-theme-set="dark" aria-label="Dark theme" title="Dark">
+            <svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><path d="M21 12.79A9 9 0 1111.21 3 7 7 0 0021 12.79z"/></svg>
+          </button>
+        </div>
       </nav>
     </div>
   </header>
@@ -45,12 +82,134 @@
   </main>
 
   <footer class="site-footer">
-    <div class="container">
-      <p>&copy; {{ now_year if now_year else 2026 }} &middot; A personal space for my thoughts.</p>
+    <div class="footer-grid">
+      <div class="footer-brand">
+        <div class="logo"><span class="logo-mark"></span>My Thoughts</div>
+        <p>{{ site_tagline }} Written by {{ site_author }}.</p>
+      </div>
+      <div class="footer-col">
+        <h4>Explore</h4>
+        <ul>
+          <li><a href="{{ url_for('index') }}#about">About</a></li>
+          <li><a href="{{ url_for('index') }}#writing">Writing</a></li>
+          <li><a href="{{ url_for('tags_page') }}">Tags</a></li>
+          <li><a href="{{ url_for('search') }}">Search</a></li>
+        </ul>
+      </div>
+      <div class="footer-col">
+        <h4>Tags</h4>
+        <ul>
+          {% for tag, count in (all_tags | dictsort(by='value', reverse=true))[:5] %}
+            <li><a href="{{ url_for('tag', tag=tag) }}">#{{ tag }}</a></li>
+          {% else %}
+            <li><em>None yet</em></li>
+          {% endfor %}
+        </ul>
+      </div>
+    </div>
+    <div class="footer-bottom">
+      <span>&copy; {{ now_year }} {{ site_author }} &middot; My Thoughts</span>
+      <span>Built with Flask &amp; Markdown</span>
     </div>
   </footer>
 
+  <!-- Floating back-to-top with progress ring -->
+  <div class="back-to-top-ring" id="backToTopRing" role="button" aria-label="Back to top">
+    <svg viewBox="0 0 48 48">
+      <circle class="ring-bg" cx="24" cy="24" r="22"></circle>
+      <circle class="ring-progress" cx="24" cy="24" r="22"
+              stroke-dasharray="138.23" stroke-dashoffset="138.23" id="ringProgress"></circle>
+    </svg>
+    <span class="ring-arrow">&uarr;</span>
+  </div>
+
+  <!-- Reader controls (floating, bottom-center) -->
+  <div class="reader-controls" id="readerControls">
+    <button class="rc-btn" id="fontDec" aria-label="Decrease font size" title="Smaller text">A-</button>
+    <button class="rc-btn" id="fontInc" aria-label="Increase font size" title="Larger text">A+</button>
+    <span class="rc-divider"></span>
+    <button class="rc-btn" id="focusToggle" aria-label="Focus mode" title="Focus mode">
+      <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><circle cx="12" cy="12" r="3"/><path d="M12 1v2M12 21v2M4.22 4.22l1.42 1.42M18.36 18.36l1.42 1.42M1 12h2M21 12h2M4.22 19.78l1.42-1.42M18.36 5.64l1.42-1.42"/></svg>
+    </button>
+    <span class="rc-divider"></span>
+    <button class="rc-btn" id="soundToggle" aria-label="Ambient sound" title="Ambient focus sound">
+      <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><path d="M11 5L6 9H2v6h4l5 4V5z"/><path d="M15.54 8.46a5 5 0 010 7.07"/></svg>
+    </button>
+    <span class="rc-divider"></span>
+    <button class="rc-btn rc-cmd" id="cmdOpen" aria-label="Command palette" title="Command palette (Ctrl+K)">
+      <svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><path d="M18 3a3 3 0 00-3 3v12a3 3 0 003 3 3 3 0 003-3 6 6 0 01-3-9M6 3a3 3 0 00-3 3v12a3 3 0 003 3 3 3 0 003-3 6 6 0 01-3-9"/></svg>
+      <span class="rc-kbd">K</span>
+    </button>
+  </div>
+
+  <!-- Command palette overlay -->
+  <div class="cmd-overlay" id="cmdOverlay" hidden>
+    <div class="cmd-box">
+      <div class="cmd-input-wrap">
+        <svg class="cmd-search-icon" width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><circle cx="11" cy="11" r="8"/><path d="M21 21l-4.35-4.35"/></svg>
+        <input type="text" id="cmdInput" class="cmd-input" placeholder="Search posts, tags, or jump to..." autocomplete="off" spellcheck="false">
+        <kbd class="cmd-esc">esc</kbd>
+      </div>
+      <ul class="cmd-results" id="cmdResults"></ul>
+      <div class="cmd-footer">
+        <span><kbd>&uarr;</kbd><kbd>&darr;</kbd> navigate</span>
+        <span><kbd>&crarr;</kbd> open</span>
+        <span><kbd>esc</kbd> close</span>
+      </div>
+    </div>
+  </div>
+
+  <!-- Reading list drawer -->
+  <button class="reading-list-fab" id="readingListFab" aria-label="Reading list" title="Your reading list">
+    <svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><path d="M19 21l-7-5-7 5V5a2 2 0 012-2h10a2 2 0 012 2z"/></svg>
+    <span class="rl-count" id="rlCount" hidden>0</span>
+  </button>
+  <aside class="reading-list-drawer" id="readingListDrawer" hidden>
+    <div class="rl-header">
+      <h3>Reading list</h3>
+      <button class="rl-close" id="rlClose" aria-label="Close">&times;</button>
+    </div>
+    <p class="rl-sub">Posts you saved to read later. Stored on this device.</p>
+    <ul class="rl-items" id="rlItems"></ul>
+    <div class="rl-empty" id="rlEmpty">Nothing saved yet. Tap the bookmark on any post.</div>
+  </aside>
+
+  <!-- PWA install prompt -->
+  <div class="install-prompt" id="installPrompt" hidden>
+    <span>Install My Thoughts for a faster, app-like reading experience.</span>
+    <button class="btn btn-sm" id="installBtn">Install</button>
+    <button class="install-dismiss" id="installDismiss" aria-label="Dismiss">&times;</button>
+  </div>
+
+  <!-- Toast notifications -->
+  <div class="toast-container" id="toastContainer"></div>
+
+  <!-- Keyboard shortcuts help -->
+  <div class="shortcuts-overlay" id="shortcutsOverlay" hidden>
+    <div class="shortcuts-box" style="position:relative;">
+      <button class="shortcuts-close" id="shortcutsClose" aria-label="Close">&times;</button>
+      <h3>Keyboard shortcuts</h3>
+      <ul class="shortcuts-list">
+        <li><span class="desc">Command palette</span><kbd>Ctrl K</kbd></li>
+        <li><span class="desc">Search</span><kbd>/</kbd></li>
+        <li><span class="desc">Toggle theme</span><kbd>t</kbd></li>
+        <li><span class="desc">Next / prev post</span><kbd>j</kbd> <kbd>k</kbd></li>
+        <li><span class="desc">Go home / about</span><kbd>g</kbd> <kbd>h</kbd>/<kbd>a</kbd></li>
+        <li><span class="desc">Back to top</span><kbd>g</kbd> <kbd>t</kbd></li>
+        <li><span class="desc">Focus mode</span><kbd>f</kbd></li>
+        <li><span class="desc">Show this help</span><kbd>?</kbd></li>
+      </ul>
+    </div>
+  </div>
+
   <script src="{{ url_for('static', filename='js/theme.js') }}"></script>
+  <script src="{{ url_for('static', filename='js/main.js') }}"></script>
+  <script src="{{ url_for('static', filename='js/alive.js') }}"></script>
+  <script src="{{ url_for('static', filename='js/interactions.js') }}"></script>
+  <script src="{{ url_for('static', filename='js/features.js') }}"></script>
+  {% if cmd_index %}
+  <script id="cmdIndex" type="application/json">{{ cmd_index | tojson | safe }}</script>
+  {% endif %}
   {% block scripts %}{% endblock %}
 </body>
 </html>

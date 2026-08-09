@@ -1,20 +1,35 @@
 (function () {
-  const toggle = document.getElementById('themeToggle');
   const root = document.documentElement;
+  const switcher = document.getElementById('themeSwitcher');
 
-  function setTheme(theme) {
-    root.setAttribute('data-theme', theme);
-    try { localStorage.setItem('theme', theme); } catch (e) {}
+  function applyAuto() {
+    const hour = new Date().getHours();
+    const autoTheme = (hour >= 6 && hour < 19) ? 'light' : 'dark';
+    const prefersDark = window.matchMedia('(prefers-color-scheme: dark)').matches;
+    root.setAttribute('data-theme', (prefersDark && autoTheme === 'light') ? 'dark' : autoTheme);
   }
 
-  const saved = localStorage.getItem('theme');
-  const prefersDark = window.matchMedia('(prefers-color-scheme: dark)').matches;
-  setTheme(saved || (prefersDark ? 'dark' : 'light'));
+  function setMode(mode) {
+    // mode: 'light' | 'dark' | 'auto'
+    try { localStorage.setItem('themeMode', mode); } catch (e) {}
+    if (mode === 'auto') applyAuto();
+    else root.setAttribute('data-theme', mode);
+    if (switcher) {
+      switcher.querySelectorAll('button').forEach(function (b) {
+        b.classList.toggle('active', b.getAttribute('data-theme-set') === mode);
+      });
+    }
+  }
 
-  if (toggle) {
-    toggle.addEventListener('click', function () {
-      const current = root.getAttribute('data-theme');
-      setTheme(current === 'dark' ? 'light' : 'dark');
+  const saved = localStorage.getItem('themeMode') || 'auto';
+  setMode(saved);
+
+  if (switcher) {
+    switcher.querySelectorAll('button').forEach(function (btn) {
+      btn.addEventListener('click', function () { setMode(btn.getAttribute('data-theme-set')); });
     });
   }
+
+  // Re-apply auto every 10 min (in case the hour boundary crosses)
+  if (saved === 'auto') setInterval(function () { if (localStorage.getItem('themeMode') === 'auto') applyAuto(); }, 600000);
 })();
