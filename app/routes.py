@@ -1,0 +1,178 @@
+import secrets
+from functools import wraps
+from flask import (
+    Flask,
+    render_template,
+    request,
+    redirect,
+    url_for,
+    session,
+    flash,
+    abort,
+    jsonify,
+)
+import markdown
+from pygments.formatters import HtmlFormatter
+
+from . import db
+
+app = Flask(__name__)
+app.secret_key = secrets.token_hex(32)
+app.config["DATABASE"] = db.DATABASE
+
+# Default admin credentials (change these!)
+ADMIN_USERNAME = "admin"
+ADMIN_PASSWORD = "changeme"
+
+db.init_db(app)
+app.teardown_appcontext(db.close_db)
+
+md = markdown.Markdown(
+    extensions=["fenced_code", "codehilite", "tables", "toc", "nl2br", "sane_lists"]
+)
+
+
+def render_markdown(text):
+    return md.reset().convert(text)
+
+
+def format_date(date_str):
+    if not date_str:
+        return ""
+    try:
+        dt = date_str.split(".")[0]
+        dt = datetime.datetime.fromisoformat(dt.replace("T", " "))
+        return dt.strftime("%B %d, %Y")
+    except Exception:
+        return date_str[:10] if date_str else ""
+
+
+import datetime  # noqa: E402
+
+
+@app.context_processor
+def inject_globals():
+    return {
+        "all_tags": db.get_all_tags(),
+        "format_date": format_date,
+    }
+
+
+def login_required(f):
+    @wraps(f)
+    def decorated(*args, **kwargs):
+        if not session.get("logged_in"):
+            flash("Please log in to access the admin panel.", "warning")
+            return redirect(url_for("login"))
+        return f(*args, **kwargs)
+
+    return decorated
+
+
+@app.template_filter("markdown")
+def markdown_filter(text):
+    return render_markdown(text)
+
+
+@app.route("/")
+def index():
+    posts = db.get_all_posts()
+    return render_template("index.html", posts=posts, title="Home")
+
+
+@app.route("/post/<slug>")
+def post(slug):
+    post = db.get_post(slug)
+    if post is None:
+        abort(404)
+    return render_template("post.html", post=post, title=post["title"])
+
+
+@app.route("/tag/<tag>")
+def tag(tag):
+    posts = db.get_posts_by_tag(tag)
+    return render_template("tag.html", posts=posts, tag=tag, title=f"#{tag}")
+
+
+@app.route("/search")
+def search():
+    q = request.args.get("q", "").strip()
+    posts = db.search_posts(q) if q else []
+    return render_template("search.html", posts=posts, query=q, title="Search")
+
+
+@app.route("/login", methods=["GET", "POST"])
+def login():
+    if request.method == "POST":
+        username = request.form.get("username", "")
+        password = request.form.get("password", "")
+        if username == ADMIN_USERNAME and password == ADMIN_PASSWORD:
+            session["logged_in"] = True
+            flash("Welcome back!", "success")
+            return redirect(url_for("admin"))
+        flash("Invalid credentials.", "error")
+    return render_template("login.html", title="Login")
+
+
+@app.route("/logout")
+def logout():
+    session.clear()
+    flash("You have been logged out.", "info")
+    return redirect(url_for("index"))
+
+
+@app.route("/admin")
+@login_required
+def admin():
+    posts = db.get_all_posts()
+    return render_template("admin/list.html", posts=posts, title="Admin")
+
+
+@app.route("/admin/new", methods=["GET", "POST"])
+@login_required
+def admin_new():
+    if request.method == "POST":
+        title = request.form.get("title", "").strip()
+        content = request.form.get("content", "")
+        tags = request.form.get("tags", "").strip()
+        if not title or not content:
+            flash("Title and content are required.", "error")
+            return render_template(
+                "admin/edit.html", title_text=title, content=content, tags=tags, title="New Post"
+            )
+        db.create_post(title, content, tags)
+        flash("Post published!", "success")
+        return redirect(url_for("admin"))
+    return render_template("admin/edit.html", title="New Post")
+
+
+@app.route("/admin/edit/<int:post_id>", methods=["GET", "POST"])
+@login_required
+def admin_edit(post_id):
+    post = db.get_post_by_id(post_id)
+    if post is None:
+        abort(404)
+    if request.method == "POST":
+        title = request.form.get("title", "").strip()
+        content = request.form.get("content", "")
+        tags = request.form.get("tags", "").strip()
+        if not title or not content:
+            flash("Title and content are required.", "error")
+            return render_template("admin/edit.html", post=post, title="Edit Post")
+        db.update_post(post_id, title, content, tags)
+        flash("Post updated!", "success")
+        return redirect(url_for("admin"))
+    return render_template("admin/edit.html", post=post, title="Edit Post")
+
+
+@app.route("/admin/delete/<int:post_id>", methods=["POST"])
+@login_required
+def admin_delete(post_id):
+    db.delete_post(post_id)
+    flash("Post deleted.", "info")
+    return redirect(url_for("admin"))
+
+
+@app.errorhandler(404)
+def not_found(e):
+    return render_template("404.html", title="Not Found"), 404
