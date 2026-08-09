@@ -1,4 +1,5 @@
 import datetime
+import io
 import re
 import secrets
 from functools import wraps
@@ -13,9 +14,11 @@ from flask import (
     abort,
 )
 import markdown
+from PIL import Image, ImageDraw
 from pygments.formatters import HtmlFormatter
 
 from . import db
+from . import og
 
 app = Flask(__name__)
 app.secret_key = secrets.token_hex(32)
@@ -28,6 +31,9 @@ ADMIN_PASSWORD = "changeme"
 # Author / site identity — edit to personalize
 SITE_AUTHOR = "Harishwaran"
 SITE_TAGLINE = "Thoughts on technology, learning, and the craft of building."
+# Used for absolute canonical URLs in OG/Twitter meta tags.
+# Falls back to the request host at runtime.
+SITE_URL = "https://work-1-hbbrkzsvlizlzrim.prod-runtime.all-hands.dev"
 
 db.init_db(app)
 app.teardown_appcontext(db.close_db)
@@ -80,6 +86,13 @@ def excerpt(text, length=180):
     return plain[:length].rsplit(" ", 1)[0] + "\u2026"
 
 
+def site_base_url():
+    """Best absolute base URL for the site (config or request host)."""
+    if SITE_URL:
+        return SITE_URL.rstrip("/")
+    return request.host_url.rstrip("/")
+
+
 @app.context_processor
 def inject_globals():
     return {
@@ -89,6 +102,7 @@ def inject_globals():
         "excerpt": excerpt,
         "site_author": SITE_AUTHOR,
         "site_tagline": SITE_TAGLINE,
+        "site_url": site_base_url(),
         "now_year": datetime.datetime.utcnow().year,
     }
 
@@ -136,7 +150,71 @@ def post(slug):
         related=related,
         toc=toc,
         title=post["title"],
+        description=excerpt(post["content"], 160),
+        og_image_url=f"{site_base_url()}/og/{slug}.png",
     )
+
+
+@app.route("/og/<slug>.png")
+def og_image(slug):
+    """Dynamically generated Open Graph preview image for a post."""
+    post = db.get_post(slug)
+    if post is None:
+        abort(404)
+    png = og.generate_og_image(
+        title=post["title"],
+        author=SITE_AUTHOR,
+        date_str=og.format_date_short(post["created_at"]),
+        read_time=f"{reading_time(post['content'])} min read",
+    )
+    from flask import Response
+    return Response(png, mimetype="image/png",
+                    headers={"Cache-Control": "public, max-age=3600"})
+
+
+@app.route("/og/default.png")
+def og_default():
+    """Default site-wide OG image for non-post pages (home, about, etc.)."""
+    png = og.generate_og_image(
+        title="My Thoughts",
+        author=SITE_AUTHOR,
+        date_str="",
+        read_time="A personal blog",
+    )
+    from flask import Response
+    return Response(png, mimetype="image/png",
+                    headers={"Cache-Control": "public, max-age=3600"})
+
+
+@app.route("/favicon.ico")
+def favicon():
+    """Tiny branded favicon (orange dot on warm bg)."""
+    from flask import Response
+    img = Image.new("RGB", (32, 32), (250, 249, 246))
+    d = ImageDraw.Draw(img)
+    d.ellipse([6, 6, 26, 26], fill=(180, 83, 9))
+    buf = io.BytesIO()
+    img.save(buf, format="ICO", sizes=[(32, 32)])
+    return Response(buf.getvalue(), mimetype="image/x-icon",
+                    headers={"Cache-Control": "public, max-age=86400"})
+
+
+@app.route("/manifest.json")
+def manifest():
+    from flask import Response, jsonify
+    return jsonify({
+        "name": "My Thoughts",
+        "short_name": "My Thoughts",
+        "description": SITE_TAGLINE,
+        "start_url": "/",
+        "display": "standalone",
+        "background_color": "#faf9f6",
+        "theme_color": "#b45309",
+        "icons": [
+            {"src": f"{site_base_url()}/og/default.png",
+             "sizes": "1200x630", "type": "image/png"}
+        ],
+    })
 
 
 @app.route("/tag/<tag>")
