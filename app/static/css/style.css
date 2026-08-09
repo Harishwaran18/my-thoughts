@@ -2171,3 +2171,119 @@ body.focus-mode .site-footer:hover { opacity: 1; pointer-events: auto; }
 }
 .theme-switcher button.active { background: var(--bg-card); color: var(--accent); box-shadow: var(--shadow-sm); }
 .theme-switcher button:hover { color: var(--text); }
+
+/* ============================================================
+   v6: tags page, read-progress, text-selection share, social proof
+   ============================================================ */
+
+/* Tag cloud page */
+.tag-cloud-page {
+  display: flex;
+  flex-wrap: wrap;
+  gap: 12px;
+  padding: 20px 0 40px;
+  align-items: baseline;
+}
+.tag-cloud-link {
+  display: inline-flex;
+  align-items: center;
+  gap: 6px;
+  color: var(--accent);
+  font-weight: 500;
+  font-family: var(--font-serif);
+  transition: all var(--transition);
+}
+.tag-cloud-link:hover { transform: translateY(-2px); text-shadow: 0 4px 12px var(--accent-tint); }
+.tag-cloud-count {
+  font-size: 0.72rem;
+  font-family: var(--font-body);
+  color: var(--text-faint);
+  background: var(--bg-soft);
+  padding: 1px 7px;
+  border-radius: 100px;
+}
+.tag-group { margin-bottom: 36px; }
+.tag-group-title {
+  font-family: var(--font-serif);
+  font-size: 1.3rem;
+  font-weight: 500;
+  margin-bottom: 16px;
+  display: flex;
+  align-items: center;
+  gap: 10px;
+}
+.tag-group-title a { color: var(--text); }
+.tag-group-title a:hover { color: var(--accent); }
+.tag-group-count { font-size: 0.78rem; color: var(--text-faint); font-family: var(--font-body); font-weight: 400; }
+
+/* Posts-read progress (floating, left side) */
+.read-progress {
+  position: fixed;
+  left: 24px;
+  top: 50%;
+  transform: translateY(-50%);
+  z-index: 85;
+  display: flex;
+  align-items: center;
+  gap: 8px;
+  background: color-mix(in srgb, var(--bg-card) 82%, transparent);
+  backdrop-filter: blur(12px);
+  -webkit-backdrop-filter: blur(12px);
+  border: 1px solid var(--border);
+  border-radius: 100px;
+  padding: 6px 12px 6px 6px;
+  box-shadow: var(--shadow);
+  font-size: 0.76rem;
+  color: var(--text-soft);
+  opacity: 0;
+  transition: all 0.5s var(--ease-out-expo);
+}
+.read-progress.show { opacity: 1; }
+.rp-ring { width: 30px; height: 30px; position: relative; display: inline-flex; }
+.rp-ring svg { width: 100%; height: 100%; transform: rotate(-90deg); }
+.rp-bg { fill: none; stroke: var(--border); stroke-width: 3; }
+.rp-fg { fill: none; stroke: var(--accent); stroke-width: 3; stroke-linecap: round; stroke-dasharray: 94.2; stroke-dashoffset: 94.2; transition: stroke-dashoffset 0.4s var(--ease-out-expo); }
+.rp-text strong { color: var(--accent); font-variant-numeric: tabular-nums; }
+@media (max-width: 960px) { .read-progress { display: none; } }
+
+/* Text selection share button */
+.quote-share {
+  position: absolute;
+  z-index: 95;
+  background: var(--text);
+  color: var(--bg);
+  border-radius: 100px;
+  padding: 6px 14px;
+  font-size: 0.78rem;
+  font-weight: 500;
+  box-shadow: var(--shadow-lg);
+  cursor: pointer;
+  opacity: 0;
+  transform: translateY(8px) scale(0.9);
+  transition: all 0.2s var(--ease-out-expo);
+  pointer-events: none;
+  white-space: nowrap;
+  display: inline-flex;
+  align-items: center;
+  gap: 6px;
+}
+.quote-share.show { opacity: 1; transform: translateY(0) scale(1); pointer-events: auto; }
+.quote-share:hover { background: var(--accent); }
+
+/* Reading time remaining (in header on post pages) */
+.time-remaining {
+  position: fixed;
+  top: 0; left: 50%;
+  transform: translateX(-50%);
+  z-index: 101;
+  background: var(--accent);
+  color: #fff;
+  font-size: 0.72rem;
+  font-weight: 500;
+  padding: 3px 14px;
+  border-radius: 0 0 100px 100px;
+  opacity: 0;
+  transition: opacity 0.3s;
+  pointer-events: none;
+}
+.time-remaining.show { opacity: 1; }

@@ -37,13 +37,15 @@ SITE_TAGLINE = "Thoughts on technology, learning, and the craft of building."
 # Falls back to the request host at runtime.
 SITE_URL = "https://work-1-hbbrkzsvlizlzrim.prod-runtime.all-hands.dev"
 
-# Giscus comments config. To enable comments, enable Discussions on your
-# GitHub repo (Harishwaran18/my-thoughts) and install the giscus app, then
-# set GISCUS_REPO_ID and GISCUS_CATEGORY_ID. Leave blank to hide comments.
+# Giscus comments config. To enable GitHub-backed comments:
+#   1. Go to your repo Settings > General > check "Discussions"
+#   2. Visit https://giscus.io, enter Harishwaran18/my-thoughts
+#   3. Copy the data-repo-id and data-category-id below
+# Until then, the built-in comments system (SQLite) works automatically.
 GISCUS_REPO = "Harishwaran18/my-thoughts"
-GISCUS_REPO_ID = ""        # set after enabling giscus.io
+GISCUS_REPO_ID = "R_kgDOTy-6PQ"      # already discovered — your repo's node ID
 GISCUS_CATEGORY = "Announcements"
-GISCUS_CATEGORY_ID = ""    # set after enabling giscus.io
+GISCUS_CATEGORY_ID = ""              # set this after enabling Discussions
 
 db.init_db(app)
 app.teardown_appcontext(db.close_db)
@@ -381,6 +383,16 @@ def reading_now():
     count = base + random.randint(-2, 3)
     count = max(1, count)
     return jsonify({"count": count})
+
+
+@app.route("/tags")
+def tags_page():
+    """Visual tag cloud page."""
+    tags = db.get_all_tags()
+    posts_by_tag = {}
+    for tag in tags:
+        posts_by_tag[tag] = db.get_posts_by_tag(tag)
+    return render_template("tags.html", tags=tags, posts_by_tag=posts_by_tag, title="Tags")
 
 
 @app.route("/tag/<tag>")

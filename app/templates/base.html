@@ -45,6 +45,7 @@
       <nav class="site-nav">
         <a href="{{ url_for('index') }}#about">About</a>
         <a href="{{ url_for('index') }}#writing">Writing</a>
+        <a href="{{ url_for('tags_page') }}">Tags</a>
         <a href="{{ url_for('search') }}">Search</a>
         {% if session.logged_in %}
           <a href="{{ url_for('admin') }}">Admin</a>
@@ -91,6 +92,7 @@
         <ul>
           <li><a href="{{ url_for('index') }}#about">About</a></li>
           <li><a href="{{ url_for('index') }}#writing">Writing</a></li>
+          <li><a href="{{ url_for('tags_page') }}">Tags</a></li>
           <li><a href="{{ url_for('search') }}">Search</a></li>
         </ul>
       </div>
@@ -204,6 +206,7 @@
   <script src="{{ url_for('static', filename='js/main.js') }}"></script>
   <script src="{{ url_for('static', filename='js/alive.js') }}"></script>
   <script src="{{ url_for('static', filename='js/interactions.js') }}"></script>
+  <script src="{{ url_for('static', filename='js/features.js') }}"></script>
   {% if cmd_index %}
   <script id="cmdIndex" type="application/json">{{ cmd_index | tojson | safe }}</script>
   {% endif %}

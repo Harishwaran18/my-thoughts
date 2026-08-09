@@ -12,6 +12,14 @@
     {% endfor %}
   </nav>
 
+  <!-- ===== Posts-read progress ===== -->
+  <div class="read-progress" id="readProgress">
+    <span class="rp-ring">
+      <svg viewBox="0 0 36 36"><circle cx="18" cy="18" r="15" class="rp-bg"/><circle cx="18" cy="18" r="15" class="rp-fg" id="rpFg"/></svg>
+    </span>
+    <span class="rp-text"><strong id="rpRead">0</strong>/<span id="rpTotal">{{ posts|length }}</span></span>
+  </div>
+
   <!-- ===== Hero ===== -->
   <section class="hero" id="top">
     <div class="eyebrow">{{ site_author }}'s Blog</div>
