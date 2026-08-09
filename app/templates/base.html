@@ -42,8 +42,8 @@
     <div class="header-inner">
       <a href="{{ url_for('index') }}" class="logo"><span class="logo-mark"></span>My Thoughts</a>
       <nav class="site-nav">
-        <a href="{{ url_for('index') }}">Home</a>
-        <a href="{{ url_for('about') }}">About</a>
+        <a href="{{ url_for('index') }}#about">About</a>
+        <a href="{{ url_for('index') }}#writing">Writing</a>
         <a href="{{ url_for('search') }}">Search</a>
         {% if session.logged_in %}
           <a href="{{ url_for('admin') }}">Admin</a>
@@ -81,8 +81,8 @@
       <div class="footer-col">
         <h4>Explore</h4>
         <ul>
-          <li><a href="{{ url_for('index') }}">All posts</a></li>
-          <li><a href="{{ url_for('about') }}">About</a></li>
+          <li><a href="{{ url_for('index') }}#about">About</a></li>
+          <li><a href="{{ url_for('index') }}#writing">Writing</a></li>
           <li><a href="{{ url_for('search') }}">Search</a></li>
         </ul>
       </div>

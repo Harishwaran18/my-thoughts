@@ -126,14 +126,25 @@ def markdown_filter(text):
 @app.route("/")
 def index():
     posts = db.get_all_posts()
-    featured = posts[0] if posts else None
-    rest = posts[1:] if posts else []
+    # Pre-render each post's markdown for inline full display on the combined page
+    rendered_posts = []
+    for p in posts:
+        rendered_posts.append({
+            "id": p["id"],
+            "title": p["title"],
+            "slug": p["slug"],
+            "tags": p["tags"],
+            "created_at": p["created_at"],
+            "content": p["content"],
+            "html": render_markdown(p["content"]),
+            "read_time": reading_time(p["content"]),
+            "excerpt": excerpt(p["content"], 140),
+        })
     return render_template(
         "index.html",
-        posts=posts,
-        featured=featured,
-        rest=rest,
-        title="Home",
+        posts=rendered_posts,
+        title="My Thoughts",
+        description=SITE_TAGLINE,
     )
 
 

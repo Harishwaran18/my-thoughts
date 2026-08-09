@@ -1,61 +1,105 @@
 {% extends "base.html" %}
 
 {% block content %}
-<section class="hero">
-  <div class="eyebrow">{{ site_author }}'s Blog</div>
-  <h1>Thoughts worth <em>sharing</em>.</h1>
-  <p class="hero-sub">{{ site_tagline }}</p>
-  <hr class="hero-rule">
-</section>
+<div class="single-page">
 
-{% if featured %}
-  <section class="featured reveal">
-    <article class="featured-card">
-      <h2 class="featured-title"><a href="{{ url_for('post', slug=featured.slug) }}">{{ featured.title }}</a></h2>
-      <div class="post-meta">
-        <time>{{ format_date(featured.created_at) }}</time>
-        <span class="dot">&middot;</span>
-        <span class="reading-time">{{ reading_time(featured.content) }} min read</span>
-      </div>
-      <p class="featured-excerpt">{{ excerpt(featured.content) }}</p>
-      <a href="{{ url_for('post', slug=featured.slug) }}" class="read-more">Read the post <span class="arrow">&rarr;</span></a>
-    </article>
-  </section>
-{% endif %}
-
-{% if rest %}
-  <div class="section-label reveal">Latest writing</div>
-  <div class="post-list">
-    {% for post in rest %}
-      <article class="post-card reveal">
-        <h2><a href="{{ url_for('post', slug=post.slug) }}">{{ post.title }}</a></h2>
-        <div class="post-meta">
-          <time>{{ format_date(post.created_at) }}</time>
-          <span class="dot">&middot;</span>
-          <span class="reading-time">{{ reading_time(post.content) }} min read</span>
-          {% if post.tags %}
-            <span class="dot">&middot;</span>
-            <span class="post-tags-inline">
-              {% for tag in post.tags.split(',') %}
-                {% if tag.strip() %}
-                  <a href="{{ url_for('tag', tag=tag.strip()) }}" class="tag">#{{ tag.strip() }}</a>
-                {% endif %}
-              {% endfor %}
-            </span>
-          {% endif %}
-        </div>
-        <p class="post-excerpt">{{ excerpt(post.content) }}</p>
-        <a href="{{ url_for('post', slug=post.slug) }}" class="read-more">Read more <span class="arrow">&rarr;</span></a>
-      </article>
+  <!-- ===== Floating section nav ===== -->
+  <nav class="section-nav" id="sectionNav" aria-label="Jump to section">
+    <a href="#top"><span class="tooltip">Top</span></a>
+    <a href="#about"><span class="tooltip">About</span></a>
+    {% for post in posts %}
+    <a href="#{{ post.slug }}"><span class="tooltip">{{ post.title }}</span></a>
     {% endfor %}
-  </div>
-{% elif not featured %}
-  <div class="empty-state">
-    <h2>No posts yet</h2>
-    <p>This is a fresh start. Share your first thought!</p>
-    {% if session.logged_in %}
-      <a href="{{ url_for('admin_new') }}" class="btn">Write your first post</a>
+  </nav>
+
+  <!-- ===== Hero ===== -->
+  <section class="hero" id="top">
+    <div class="eyebrow">{{ site_author }}'s Blog</div>
+    <h1>My <em>Thoughts</em>.</h1>
+    <p class="hero-sub">{{ site_tagline }}</p>
+    <hr class="hero-rule">
+    <a href="#about" class="scroll-cue">Start reading &darr;</a>
+  </section>
+
+  <!-- ===== About (inline) ===== -->
+  <section class="page-section" id="about">
+    <div class="section-head">
+      <span class="section-num">01</span>
+      <h2 class="section-title">About</h2>
+    </div>
+    <div class="about-inline">
+      <div class="author-bio author-bio-large">
+        <div class="author-avatar">{{ site_author[0] }}</div>
+        <div>
+          <div class="author-name">{{ site_author }}</div>
+          <div class="author-desc">{{ site_tagline }}</div>
+        </div>
+      </div>
+      <div class="post-content about-content">
+        <p>Welcome to my corner of the internet. This is where I write about the things
+        I'm thinking about &mdash; technology, learning, books, and the slow craft of
+        building things that last.</p>
+        <p>Writing is how I think. This blog is a public notebook: a place to work out
+        ideas, share what I learn, and occasionally say something worth your time.</p>
+        <blockquote>The best way to learn something deeply is to teach it &mdash; or
+        better, to write about it where someone might read it.</blockquote>
+        <p>Built with Flask, Markdown, and SQLite &mdash; simple tools, kept intentionally small.</p>
+      </div>
+    </div>
+  </section>
+
+  <!-- ===== All posts, full content, combined ===== -->
+  <section class="page-section" id="writing">
+    <div class="section-head">
+      <span class="section-num">02</span>
+      <h2 class="section-title">Writing</h2>
+    </div>
+
+    {% for post in posts %}
+    <article class="combined-post" id="{{ post.slug }}">
+      <header class="combined-post-head">
+        <div class="post-eyebrow">{{ format_date(post.created_at) }} &middot; {{ post.read_time }} min read</div>
+        <h2 class="combined-post-title">
+          <a href="{{ url_for('post', slug=post.slug) }}">{{ post.title }}</a>
+        </h2>
+        {% if post.tags %}
+        <div class="post-tags-inline">
+          {% for tag in post.tags.split(',') %}
+            {% if tag.strip() %}
+              <a href="{{ url_for('tag', tag=tag.strip()) }}" class="tag">#{{ tag.strip() }}</a>
+            {% endif %}
+          {% endfor %}
+        </div>
+        {% endif %}
+      </header>
+      <div class="post-content combined-content">
+        {{ post.html | safe }}
+      </div>
+      <div class="combined-post-foot">
+        <a href="{{ url_for('post', slug=post.slug) }}" class="read-more">View standalone <span class="arrow">&rarr;</span></a>
+        {% if session.logged_in %}
+          <a href="{{ url_for('admin_edit', post_id=post.id) }}" class="btn btn-sm">Edit</a>
+        {% endif %}
+      </div>
+      {% if not loop.last %}<hr class="post-divider">{% endif %}
+    </article>
+    {% endfor %}
+
+    {% if not posts %}
+    <div class="empty-state">
+      <h2>No posts yet</h2>
+      <p>This is a fresh start. Share your first thought!</p>
+      {% if session.logged_in %}
+        <a href="{{ url_for('admin_new') }}" class="btn">Write your first post</a>
+      {% endif %}
+    </div>
     {% endif %}
+  </section>
+
+  <!-- ===== Back to top ===== -->
+  <div class="back-to-top-wrap">
+    <a href="#top" class="back-to-top">&uarr; Back to top</a>
   </div>
-{% endif %}
+
+</div>
 {% endblock %}
