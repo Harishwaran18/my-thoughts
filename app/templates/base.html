@@ -113,9 +113,49 @@
     <span class="ring-arrow">&uarr;</span>
   </div>
 
+  <!-- Reader controls (floating, bottom-center) -->
+  <div class="reader-controls" id="readerControls">
+    <button class="rc-btn" id="fontDec" aria-label="Decrease font size" title="Smaller text">A-</button>
+    <button class="rc-btn" id="fontInc" aria-label="Increase font size" title="Larger text">A+</button>
+    <span class="rc-divider"></span>
+    <button class="rc-btn" id="focusToggle" aria-label="Focus mode" title="Focus mode">
+      <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><circle cx="12" cy="12" r="3"/><path d="M12 1v2M12 21v2M4.22 4.22l1.42 1.42M18.36 18.36l1.42 1.42M1 12h2M21 12h2M4.22 19.78l1.42-1.42M18.36 5.64l1.42-1.42"/></svg>
+    </button>
+    <span class="rc-divider"></span>
+    <button class="rc-btn" id="soundToggle" aria-label="Ambient sound" title="Ambient focus sound">
+      <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><path d="M11 5L6 9H2v6h4l5 4V5z"/><path d="M15.54 8.46a5 5 0 010 7.07"/></svg>
+    </button>
+    <span class="rc-divider"></span>
+    <button class="rc-btn rc-cmd" id="cmdOpen" aria-label="Command palette" title="Command palette (Ctrl+K)">
+      <svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><path d="M18 3a3 3 0 00-3 3v12a3 3 0 003 3 3 3 0 003-3 6 6 0 01-3-9M6 3a3 3 0 00-3 3v12a3 3 0 003 3 3 3 0 003-3 6 6 0 01-3-9"/></svg>
+      <span class="rc-kbd">K</span>
+    </button>
+  </div>
+
+  <!-- Command palette overlay -->
+  <div class="cmd-overlay" id="cmdOverlay" hidden>
+    <div class="cmd-box">
+      <div class="cmd-input-wrap">
+        <svg class="cmd-search-icon" width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><circle cx="11" cy="11" r="8"/><path d="M21 21l-4.35-4.35"/></svg>
+        <input type="text" id="cmdInput" class="cmd-input" placeholder="Search posts, tags, or jump to..." autocomplete="off" spellcheck="false">
+        <kbd class="cmd-esc">esc</kbd>
+      </div>
+      <ul class="cmd-results" id="cmdResults"></ul>
+      <div class="cmd-footer">
+        <span><kbd>&uarr;</kbd><kbd>&darr;</kbd> navigate</span>
+        <span><kbd>&crarr;</kbd> open</span>
+        <span><kbd>esc</kbd> close</span>
+      </div>
+    </div>
+  </div>
+
   <script src="{{ url_for('static', filename='js/theme.js') }}"></script>
   <script src="{{ url_for('static', filename='js/main.js') }}"></script>
   <script src="{{ url_for('static', filename='js/alive.js') }}"></script>
+  <script src="{{ url_for('static', filename='js/interactions.js') }}"></script>
+  {% if cmd_index %}
+  <script id="cmdIndex" type="application/json">{{ cmd_index | tojson | safe }}</script>
+  {% endif %}
   {% block scripts %}{% endblock %}
 </body>
 </html>

@@ -250,4 +250,8 @@
   } else {
     pageSections.forEach(function (s) { s.classList.add('in-view'); });
   }
+
+  /* ----- Show reader controls after a moment ----- */
+  var rc = document.getElementById('readerControls');
+  if (rc) setTimeout(function () { rc.classList.add('show'); }, 1200);
 })();

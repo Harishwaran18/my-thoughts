@@ -115,6 +115,11 @@ def init_db(app):
             );
             """
         )
+        # Migrate: add views column if missing (idempotent)
+        cols = [r[1] for r in db.execute("PRAGMA table_info(posts)").fetchall()]
+        if "views" not in cols:
+            db.execute("ALTER TABLE posts ADD COLUMN views INTEGER DEFAULT 0")
+        db.commit()
         # Seed sample posts only if the table is empty
         count = db.execute("SELECT COUNT(*) FROM posts").fetchone()[0]
         if count == 0:
@@ -250,3 +255,16 @@ def get_featured_post():
     return db.execute(
         "SELECT * FROM posts ORDER BY created_at DESC LIMIT 1"
     ).fetchone()
+
+
+def increment_views(slug):
+    """Increment the view counter for a post. Silently ignores missing posts."""
+    db = get_db()
+    db.execute("UPDATE posts SET views = views + 1 WHERE slug = ?", (slug,))
+    db.commit()
+
+
+def total_views():
+    db = get_db()
+    row = db.execute("SELECT COALESCE(SUM(views), 0) AS s FROM posts").fetchone()
+    return row["s"] if row else 0

@@ -133,8 +133,7 @@ def index():
     for p in posts:
         rt = reading_time(p["content"])
         # crude word count from raw markdown
-        import re as _re
-        words = len(_re.sub(r"[#*`>\-\[\]()!]", " ", p["content"]).split())
+        words = len(re.sub(r"[#*`>\-\[\]()!]", " ", p["content"]).split())
         total_words += words
         total_reads += rt
         rendered_posts.append({
@@ -147,12 +146,27 @@ def index():
             "html": render_markdown(p["content"]),
             "read_time": rt,
             "excerpt": excerpt(p["content"], 140),
+            "views": p["views"] or 0,
         })
+    # Build command palette index (posts + tags + actions)
+    cmd_index = []
+    for p in rendered_posts:
+        cmd_index.append({"type": "post", "label": p["title"], "url": f"/post/{p['slug']}", "hint": "Post"})
+    for tag, _ in db.get_all_tags().items():
+        cmd_index.append({"type": "tag", "label": f"#{tag}", "url": f"/tag/{tag}", "hint": "Tag"})
+    cmd_index.extend([
+        {"type": "action", "label": "Go home", "url": "/", "hint": "Page"},
+        {"type": "action", "label": "About", "url": "/about", "hint": "Page"},
+        {"type": "action", "label": "Search posts", "url": "/search", "hint": "Page"},
+        {"type": "action", "label": "Toggle dark mode", "url": "#theme", "hint": "Action"},
+    ])
     return render_template(
         "index.html",
         posts=rendered_posts,
         total_words=total_words,
         total_reads=total_reads,
+        total_views=db.total_views(),
+        cmd_index=cmd_index,
         title="My Thoughts",
         description=SITE_TAGLINE,
     )
@@ -163,6 +177,7 @@ def post(slug):
     post = db.get_post(slug)
     if post is None:
         abort(404)
+    db.increment_views(slug)
     related = db.get_related_posts(post, limit=3)
     toc = extract_toc(post["content"])
     return render_template(
