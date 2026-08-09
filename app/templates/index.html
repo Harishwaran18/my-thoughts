@@ -88,6 +88,10 @@
       </div>
       <div class="combined-post-foot">
         <a href="{{ url_for('post', slug=post.slug) }}" class="read-more">View standalone <span class="arrow">&rarr;</span></a>
+        <button class="bookmark-btn" data-slug="{{ post.slug }}" data-title="{{ post.title }}" aria-label="Save to reading list" title="Save to reading list">
+          <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><path d="M19 21l-7-5-7 5V5a2 2 0 012-2h10a2 2 0 012 2z"/></svg>
+          <span class="bm-label">Save</span>
+        </button>
         {% if session.logged_in %}
           <a href="{{ url_for('admin_edit', post_id=post.id) }}" class="btn btn-sm">Edit</a>
         {% endif %}
@@ -111,12 +115,18 @@
   <section class="page-section" id="subscribe">
     <div class="newsletter reveal">
       <h3>Don't miss a thought</h3>
-      <p>Get notified when I publish something new. No spam, just writing. Unsubscribe anytime.</p>
+      <p>Join <strong id="subCount">{{ subscriber_count }}</strong> reader{{ '' if subscriber_count == 1 else 's' }} getting notified when I publish. No spam, just writing.</p>
       <form class="newsletter-form" id="newsletterForm">
         <input type="email" name="email" placeholder="you@example.com" required>
         <button type="submit" class="btn">Subscribe</button>
       </form>
-      <div class="newsletter-success" id="newsletterSuccess">&#10003; You're in! Thanks for subscribing.</div>
+      <div class="newsletter-success" id="newsletterSuccess"></div>
+    </div>
+
+    <!-- Reading now widget -->
+    <div class="reading-now" id="readingNow">
+      <span class="rn-pulse"></span>
+      <span><strong id="rnCount">—</strong> people reading right now</span>
     </div>
 
     <div class="social-block" style="text-align:center; margin-top:40px;">

@@ -28,6 +28,7 @@
   <link rel="canonical" href="{{ site_url }}{{ request.path }}">
   <link rel="icon" href="{{ url_for('favicon') }}">
   <link rel="manifest" href="{{ url_for('manifest') }}">
+  <link rel="alternate" type="application/rss+xml" title="My Thoughts" href="{{ site_url }}/feed.xml">
   <meta name="theme-color" content="#b45309">
   <title>{% block title %}{{ title }}{% endblock %} &middot; My Thoughts</title>
   <link rel="stylesheet" href="{{ url_for('static', filename='css/style.css') }}">
@@ -147,6 +148,28 @@
         <span><kbd>esc</kbd> close</span>
       </div>
     </div>
+  </div>
+
+  <!-- Reading list drawer -->
+  <button class="reading-list-fab" id="readingListFab" aria-label="Reading list" title="Your reading list">
+    <svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><path d="M19 21l-7-5-7 5V5a2 2 0 012-2h10a2 2 0 012 2z"/></svg>
+    <span class="rl-count" id="rlCount" hidden>0</span>
+  </button>
+  <aside class="reading-list-drawer" id="readingListDrawer" hidden>
+    <div class="rl-header">
+      <h3>Reading list</h3>
+      <button class="rl-close" id="rlClose" aria-label="Close">&times;</button>
+    </div>
+    <p class="rl-sub">Posts you saved to read later. Stored on this device.</p>
+    <ul class="rl-items" id="rlItems"></ul>
+    <div class="rl-empty" id="rlEmpty">Nothing saved yet. Tap the bookmark on any post.</div>
+  </aside>
+
+  <!-- PWA install prompt -->
+  <div class="install-prompt" id="installPrompt" hidden>
+    <span>Install My Thoughts for a faster, app-like reading experience.</span>
+    <button class="btn btn-sm" id="installBtn">Install</button>
+    <button class="install-dismiss" id="installDismiss" aria-label="Dismiss">&times;</button>
   </div>
 
   <script src="{{ url_for('static', filename='js/theme.js') }}"></script>

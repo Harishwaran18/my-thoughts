@@ -7,9 +7,17 @@
     try { localStorage.setItem('theme', theme); } catch (e) {}
   }
 
+  // Determine initial theme: saved preference > auto by local time > OS preference
   const saved = localStorage.getItem('theme');
-  const prefersDark = window.matchMedia('(prefers-color-scheme: dark)').matches;
-  setTheme(saved || (prefersDark ? 'dark' : 'light'));
+  if (saved) {
+    setTheme(saved);
+  } else {
+    const hour = new Date().getHours();
+    // Light 6am–7pm, dark otherwise — auto day/night
+    const autoTheme = (hour >= 6 && hour < 19) ? 'light' : 'dark';
+    const prefersDark = window.matchMedia('(prefers-color-scheme: dark)').matches;
+    setTheme(prefersDark && autoTheme === 'light' ? 'dark' : autoTheme);
+  }
 
   if (toggle) {
     toggle.addEventListener('click', function () {

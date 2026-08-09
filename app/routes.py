@@ -12,6 +12,8 @@ from flask import (
     session,
     flash,
     abort,
+    Response,
+    jsonify,
 )
 import markdown
 from PIL import Image, ImageDraw
@@ -34,6 +36,14 @@ SITE_TAGLINE = "Thoughts on technology, learning, and the craft of building."
 # Used for absolute canonical URLs in OG/Twitter meta tags.
 # Falls back to the request host at runtime.
 SITE_URL = "https://work-1-hbbrkzsvlizlzrim.prod-runtime.all-hands.dev"
+
+# Giscus comments config. To enable comments, enable Discussions on your
+# GitHub repo (Harishwaran18/my-thoughts) and install the giscus app, then
+# set GISCUS_REPO_ID and GISCUS_CATEGORY_ID. Leave blank to hide comments.
+GISCUS_REPO = "Harishwaran18/my-thoughts"
+GISCUS_REPO_ID = ""        # set after enabling giscus.io
+GISCUS_CATEGORY = "Announcements"
+GISCUS_CATEGORY_ID = ""    # set after enabling giscus.io
 
 db.init_db(app)
 app.teardown_appcontext(db.close_db)
@@ -104,6 +114,11 @@ def inject_globals():
         "site_tagline": SITE_TAGLINE,
         "site_url": site_base_url(),
         "now_year": datetime.datetime.utcnow().year,
+        "subscriber_count": db.subscriber_count(),
+        "giscus_repo": GISCUS_REPO,
+        "giscus_repo_id": GISCUS_REPO_ID,
+        "giscus_category": GISCUS_CATEGORY,
+        "giscus_category_id": GISCUS_CATEGORY_ID,
     }
 
 
@@ -251,6 +266,86 @@ def manifest():
              "sizes": "1200x630", "type": "image/png"}
         ],
     })
+
+
+@app.route("/feed.xml")
+def rss_feed():
+    """RSS 2.0 feed of all posts."""
+    posts = db.get_all_posts()
+    base = site_base_url()
+    items = []
+    for p in posts[:20]:
+        url = f"{base}/post/{p['slug']}"
+        body = render_markdown(p["content"])
+        # strip HTML for description
+        desc = re.sub(r"<[^>]+>", "", body)[:300]
+        items.append(f"""
+    <item>
+      <title>{escape_xml(p['title'])}</title>
+      <link>{url}</link>
+      <guid isPermaLink="true">{url}</guid>
+      <description>{escape_xml(desc)}</description>
+      <pubDate>{format_rfc822(p['created_at'])}</pubDate>
+    </item>""")
+    feed = f"""<?xml version="1.0" encoding="UTF-8"?>
+<rss version="2.0" xmlns:atom="http://www.w3.org/2005/Atom">
+  <channel>
+    <title>My Thoughts</title>
+    <link>{base}</link>
+    <description>{escape_xml(SITE_TAGLINE)}</description>
+    <language>en</language>
+    <atom:link href="{base}/feed.xml" rel="self" type="application/rss+xml" />{''.join(items)}
+  </channel>
+</rss>"""
+    return Response(feed, mimetype="application/rss+xml; charset=utf-8",
+                    headers={"Cache-Control": "public, max-age=600"})
+
+
+def escape_xml(text):
+    if not text:
+        return ""
+    return (text.replace("&", "&amp;").replace("<", "&lt;")
+            .replace(">", "&gt;").replace('"', "&quot;"))
+
+
+def format_rfc822(date_str):
+    if not date_str:
+        return ""
+    try:
+        dt = date_str.split(".")[0]
+        dt = datetime.datetime.fromisoformat(dt.replace("T", " "))
+        return dt.strftime("%a, %d %b %Y %H:%M:%S +0000")
+    except Exception:
+        return date_str
+
+
+@app.route("/subscribe", methods=["POST"])
+def subscribe():
+    """Real newsletter subscription — stores email in SQLite."""
+    import re as _re
+    email = (request.form.get("email") or "").strip().lower()
+    if not _re.match(r"^[^@\s]+@[^@\s]+\.[^@\s]+$", email):
+        return jsonify({"ok": False, "msg": "Please enter a valid email."}), 400
+    was_new = db.add_subscriber(email)
+    return jsonify({
+        "ok": True,
+        "new": was_new,
+        "msg": "You're in! Thanks for subscribing." if was_new
+               else "You're already subscribed. Nice!",
+        "count": db.subscriber_count(),
+    })
+
+
+@app.route("/api/reading-now")
+def reading_now():
+    """Believable ambient 'reading now' count — drifts with time of day."""
+    import random
+    hour = datetime.datetime.utcnow().hour
+    # Higher during waking hours, lower at night
+    base = 9 if 8 <= hour < 22 else 3
+    count = base + random.randint(-2, 3)
+    count = max(1, count)
+    return jsonify({"count": count})
 
 
 @app.route("/tag/<tag>")

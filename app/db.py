@@ -75,6 +75,81 @@ Writing in public is itself a tool. The pressure of a possible reader turns vagu
 > The best tool is the one that gets out of your way.""",
         "tools, writing",
     ),
+    (
+        "On focus and the cost of context switching",
+        """# On focus and the cost of context switching
+
+Focus is not about willpower. It is about protecting a single thread of attention long enough for something to form.
+
+## What switching actually costs
+
+Every time you change tasks, a residue of the previous one stays behind. You are not fully here. Research calls this *attention residue*, and it is the quiet tax on modern work.
+
+- a notification costs ~23 minutes of refocus
+- half-finished thoughts leak into the next one
+- the deep work never starts because the shallow work never ends
+
+## The fix is boring
+
+Same place. Same time. Same tools. Remove the decision of *whether* to work, so the only decision left is *what*.
+
+> Discipline is choosing between what you want now and what you want most.
+
+## A small experiment
+
+Try one hour, no tabs but one. Phone in another room. Notice how loud the silence feels at first. That is the thing you have been missing.""",
+        "focus, productivity, thoughts",
+    ),
+    (
+        "Reading slow to read more",
+        """# Reading slow to read more
+
+I used to measure reading by books finished. Now I measure it by ideas changed.
+
+## The trap of the finish line
+
+Finishing a book feels productive. But speed-reading through a book you cannot recall a month later is not reading. It is consumption dressed up as accomplishment.
+
+## Three books read slowly beats thirty skimmed
+
+One idea, truly absorbed, can reorganize how you see everything. A hundred ideas, half-grasped, clutter the shelf and the mind.
+
+> It is not how many books you have read, but how many have read you back.
+
+## What I do now
+
+- one book at a time
+- a notebook beside it
+- a sentence per session, if that is what it takes
+
+Slow reading is not less reading. It is more reading, paid attention to.""",
+        "reading, books, learning",
+    ),
+    (
+        "The compounding value of writing every week",
+        """# The compounding value of writing every week
+
+Writing weekly is not about each piece. It is about the curve.
+
+## One post is a pebble
+
+A single essay disappears into the stream. You will not notice it. Nobody might. That is fine.
+
+## Fifty posts is a path
+
+After a year, something happens. Strangers quote you back to yourself. Old ideas resurface, refined. You meet the person you were becoming.
+
+## The math nobody believes
+
+If one in a hundred people who see your work find it useful, more writing means more useful. The distribution is uneven, but the expected value compounds.
+
+- write when you have something to say
+- publish before it feels ready
+- let time do the editing
+
+> The best time to start writing was a year ago. The second best time is this week.""",
+        "writing, habits, thoughts",
+    ),
 ]
 
 
@@ -112,6 +187,12 @@ def init_db(app):
                 id INTEGER PRIMARY KEY AUTOINCREMENT,
                 username TEXT NOT NULL UNIQUE,
                 password_hash TEXT NOT NULL
+            );
+
+            CREATE TABLE IF NOT EXISTS subscribers (
+                id INTEGER PRIMARY KEY AUTOINCREMENT,
+                email TEXT NOT NULL UNIQUE,
+                created_at TIMESTAMP DEFAULT CURRENT_TIMESTAMP
             );
             """
         )
@@ -268,3 +349,20 @@ def total_views():
     db = get_db()
     row = db.execute("SELECT COALESCE(SUM(views), 0) AS s FROM posts").fetchone()
     return row["s"] if row else 0
+
+
+def add_subscriber(email):
+    """Add a subscriber. Returns True if new, False if already existed."""
+    db = get_db()
+    try:
+        db.execute("INSERT INTO subscribers (email) VALUES (?)", (email,))
+        db.commit()
+        return True
+    except sqlite3.IntegrityError:
+        return False
+
+
+def subscriber_count():
+    db = get_db()
+    row = db.execute("SELECT COUNT(*) AS c FROM subscribers").fetchone()
+    return row["c"] if row else 0

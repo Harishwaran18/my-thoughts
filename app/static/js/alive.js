@@ -220,23 +220,6 @@
   updateTime();
   setInterval(updateTime, 1000);
 
-  /* ---------- Confetti on newsletter subscribe ---------- */
-  var nlForm = document.getElementById('newsletterForm');
-  if (nlForm) {
-    nlForm.addEventListener('submit', function () {
-      var colors = ['#b45309', '#d97706', '#0f766e', '#14b8a6', '#f59e0b', '#2dd4bf'];
-      for (var i = 0; i < 80; i++) {
-        var c = document.createElement('div');
-        c.className = 'confetti-piece';
-        c.style.left = Math.random() * 100 + 'vw';
-        c.style.background = colors[Math.floor(Math.random() * colors.length)];
-        c.style.animationDelay = (Math.random() * 0.4) + 's';
-        c.style.animationDuration = (1.8 + Math.random() * 1.4) + 's';
-        c.style.transform = 'rotate(' + (Math.random() * 360) + 'deg)';
-        if (Math.random() > 0.5) c.style.borderRadius = '50%';
-        document.body.appendChild(c);
-        (function (el) { setTimeout(function () { el.remove(); }, 3200); })(c);
-      }
-    });
-  }
+  /* Newsletter confetti is triggered by interactions.js after the real
+     /subscribe backend responds. */
 })();

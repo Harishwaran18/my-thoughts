@@ -259,4 +259,153 @@
       (function (el) { setTimeout(function () { el.remove(); }, 4000); })(c);
     }
   }
+
+  /* ---------- Newsletter form (real backend) ---------- */
+  var nlForm = document.getElementById('newsletterForm');
+  if (nlForm) {
+    nlForm.addEventListener('submit', function (e) {
+      e.preventDefault();
+      var email = nlForm.querySelector('input[name="email"]').value;
+      var btn = nlForm.querySelector('button[type="submit"]');
+      var orig = btn.textContent;
+      btn.textContent = '...'; btn.disabled = true;
+      fetch('/subscribe', {
+        method: 'POST',
+        headers: { 'Content-Type': 'application/x-www-form-urlencoded' },
+        body: 'email=' + encodeURIComponent(email)
+      }).then(function (r) { return r.json(); })
+        .then(function (data) {
+          var success = document.getElementById('newsletterSuccess');
+          var subCount = document.getElementById('subCount');
+          if (data.ok) {
+            nlForm.style.display = 'none';
+            if (success) { success.innerHTML = '&#10003; ' + data.msg; success.classList.add('show'); }
+            if (subCount && data.count) subCount.textContent = data.count;
+            fireConfetti(80);
+          } else {
+            if (success) { success.innerHTML = data.msg; success.classList.add('show'); success.style.color = 'var(--accent)'; }
+            btn.textContent = orig; btn.disabled = false;
+          }
+        }).catch(function () { btn.textContent = orig; btn.disabled = false; });
+    });
+  }
+
+  /* ---------- Reading now widget ---------- */
+  var rnCount = document.getElementById('rnCount');
+  if (rnCount) {
+    function fetchReading() {
+      fetch('/api/reading-now').then(function (r) { return r.json(); })
+        .then(function (d) {
+          if (d && typeof d.count === 'number') {
+            rnCount.textContent = d.count;
+            var rn = document.getElementById('readingNow');
+            if (rn) rn.classList.add('show');
+          }
+        }).catch(function () {});
+    }
+    fetchReading();
+    setInterval(fetchReading, 9000);
+  }
+
+  /* ---------- Reading list (bookmarks, localStorage) ---------- */
+  var RL_KEY = 'readingList';
+  function getRL() { try { return JSON.parse(localStorage.getItem(RL_KEY) || '[]'); } catch (e) { return []; } }
+  function saveRL(list) { localStorage.setItem(RL_KEY, JSON.stringify(list)); updateRLCount(); }
+  function updateRLCount() {
+    var list = getRL();
+    var c = document.getElementById('rlCount');
+    if (c) { c.textContent = list.length; c.hidden = list.length === 0; }
+    var slugs = list.map(function (x) { return x.slug; });
+    document.querySelectorAll('.bookmark-btn').forEach(function (b) {
+      var saved = slugs.indexOf(b.getAttribute('data-slug')) !== -1;
+      b.classList.toggle('saved', saved);
+      var lbl = b.querySelector('.bm-label');
+      if (lbl) lbl.textContent = saved ? 'Saved' : 'Save';
+    });
+  }
+  document.querySelectorAll('.bookmark-btn').forEach(function (btn) {
+    btn.addEventListener('click', function () {
+      var slug = btn.getAttribute('data-slug');
+      var title = btn.getAttribute('data-title');
+      var list = getRL();
+      var idx = list.map(function (x) { return x.slug; }).indexOf(slug);
+      if (idx === -1) list.push({ slug: slug, title: title, url: '/post/' + slug });
+      else list.splice(idx, 1);
+      saveRL(list); renderRL();
+    });
+  });
+  function renderRL() {
+    var list = getRL();
+    var ul = document.getElementById('rlItems');
+    var empty = document.getElementById('rlEmpty');
+    if (!ul) return;
+    ul.innerHTML = '';
+    if (!list.length) { if (empty) empty.style.display = 'block'; return; }
+    if (empty) empty.style.display = 'none';
+    list.forEach(function (item) {
+      var li = document.createElement('li');
+      li.className = 'rl-item';
+      li.innerHTML = '<a href="' + item.url + '">' + item.title + '</a>' +
+                     '<button class="rl-remove" data-slug="' + item.slug + '" aria-label="Remove">&times;</button>';
+      li.querySelector('.rl-remove').addEventListener('click', function () {
+        var l = getRL().filter(function (x) { return x.slug !== item.slug; });
+        saveRL(l); renderRL();
+      });
+      ul.appendChild(li);
+    });
+  }
+  var rlFab = document.getElementById('readingListFab');
+  var rlDrawer = document.getElementById('readingListDrawer');
+  var rlClose = document.getElementById('rlClose');
+  if (rlFab) rlFab.addEventListener('click', function () {
+    renderRL();
+    if (rlDrawer) { rlDrawer.hidden = false; setTimeout(function(){ rlDrawer.classList.add('open'); }, 10); }
+  });
+  if (rlClose) rlClose.addEventListener('click', function () {
+    if (rlDrawer) { rlDrawer.classList.remove('open'); setTimeout(function(){ rlDrawer.hidden = true; }, 250); }
+  });
+  updateRLCount(); renderRL();
+
+  /* ---------- PWA install prompt ---------- */
+  var deferredPrompt = null;
+  var installPrompt = document.getElementById('installPrompt');
+  var installBtn = document.getElementById('installBtn');
+  var installDismiss = document.getElementById('installDismiss');
+  window.addEventListener('beforeinstallprompt', function (e) {
+    e.preventDefault(); deferredPrompt = e;
+    if (installPrompt && !localStorage.getItem('installDismissed')) {
+      installPrompt.hidden = false;
+      setTimeout(function () { installPrompt.classList.add('show'); }, 10);
+    }
+  });
+  if (installBtn) installBtn.addEventListener('click', function () {
+    if (!deferredPrompt) return;
+    deferredPrompt.prompt();
+    deferredPrompt.userChoice.then(function () {
+      deferredPrompt = null;
+      installPrompt.classList.remove('show');
+      setTimeout(function () { installPrompt.hidden = true; }, 250);
+    });
+  });
+  if (installDismiss) installDismiss.addEventListener('click', function () {
+    localStorage.setItem('installDismissed', '1');
+    installPrompt.classList.remove('show');
+    setTimeout(function () { installPrompt.hidden = true; }, 250);
+  });
+
+  /* ---------- Shared confetti helper ---------- */
+  function fireConfetti(n) {
+    var colors = ['#b45309', '#d97706', '#0f766e', '#14b8a6', '#f59e0b', '#2dd4bf'];
+    for (var i = 0; i < n; i++) {
+      var c = document.createElement('div');
+      c.className = 'confetti-piece';
+      c.style.left = Math.random() * 100 + 'vw';
+      c.style.background = colors[Math.floor(Math.random() * colors.length)];
+      c.style.animationDelay = (Math.random() * 0.4) + 's';
+      c.style.animationDuration = (1.8 + Math.random() * 1.4) + 's';
+      if (Math.random() > 0.5) c.style.borderRadius = '50%';
+      document.body.appendChild(c);
+      (function (el) { setTimeout(function () { el.remove(); }, 3200); })(c);
+    }
+  }
 })();
