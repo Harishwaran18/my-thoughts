@@ -323,6 +323,7 @@ a:hover { color: var(--accent-hover); }
   line-height: 1.6;
   animation: fadeUp 0.9s var(--ease-out-expo) 0.2s both;
 }
+.hero-sub[data-typewriter] { animation: none; opacity: 1; transform: none; min-height: 1.8em; }
 
 /* Hero stats row */
 .hero-stats {
@@ -1412,4 +1413,202 @@ textarea { resize: vertical; font-family: var(--font-mono); font-size: 0.9rem; l
   .newsletter { padding: 32px 22px; }
   .newsletter-form { flex-direction: column; }
   .back-to-top-ring { bottom: 18px; right: 18px; width: 42px; height: 42px; }
+}
+
+/* ============================================================
+   ALIVE SYSTEM — cursor, aurora, particles, presence, typewriter
+   Makes the site feel genuinely living. Desktop/pointer only.
+   Respects prefers-reduced-motion (all disabled then).
+   ============================================================ */
+
+/* Hide native cursor only on fine-pointer devices with JS active */
+@media (pointer: fine) {
+  body.cursor-custom { cursor: none; }
+  body.cursor-custom a, body.cursor-custom button, body.cursor-custom input,
+  body.cursor-custom textarea, body.cursor-custom .social-link,
+  body.cursor-custom .theme-toggle, body.cursor-custom .back-to-top-ring,
+  body.cursor-custom .copy-code-btn, body.cursor-custom .tag { cursor: none; }
+}
+
+/* Custom cursor: precise dot + trailing glow ring */
+.cursor-dot, .cursor-ring {
+  position: fixed;
+  top: 0; left: 0;
+  border-radius: 50%;
+  pointer-events: none;
+  z-index: 9999;
+  mix-blend-mode: difference;
+  will-change: transform;
+}
+.cursor-dot {
+  width: 7px; height: 7px;
+  background: #fff;
+  transition: width 0.2s, height 0.2s, opacity 0.2s;
+}
+.cursor-ring {
+  width: 34px; height: 34px;
+  border: 1.5px solid rgba(255,255,255,0.7);
+  transition: width 0.3s var(--ease-out-expo), height 0.3s var(--ease-out-expo),
+              border-color 0.3s, opacity 0.3s, background 0.3s;
+}
+.cursor-ring.hovering {
+  width: 56px; height: 56px;
+  border-color: var(--accent);
+  background: var(--accent-tint);
+  mix-blend-mode: normal;
+}
+.cursor-dot.hovering { opacity: 0; }
+body.cursor-hidden .cursor-dot, body.cursor-hidden .cursor-ring { opacity: 0; }
+
+/* Aurora spotlight following cursor */
+.aurora {
+  position: fixed;
+  inset: 0;
+  pointer-events: none;
+  z-index: 0;
+  overflow: hidden;
+}
+.aurora::before {
+  content: '';
+  position: absolute;
+  width: 600px; height: 600px;
+  border-radius: 50%;
+  background: radial-gradient(circle, rgba(217, 119, 6, 0.10), transparent 65%);
+  transform: translate(-50%, -50%);
+  will-change: transform;
+  transition: opacity 0.6s;
+}
+[data-theme="dark"] .aurora::before {
+  background: radial-gradient(circle, rgba(245, 158, 11, 0.08), transparent 65%);
+}
+.aurora-teal::after {
+  content: '';
+  position: absolute;
+  width: 420px; height: 420px;
+  border-radius: 50%;
+  background: radial-gradient(circle, rgba(15, 118, 110, 0.09), transparent 70%);
+  transform: translate(-50%, -50%);
+  will-change: transform;
+}
+[data-theme="dark"] .aurora-teal::after {
+  background: radial-gradient(circle, rgba(45, 212, 191, 0.07), transparent 70%);
+}
+
+/* Ambient floating particles */
+.particles {
+  position: fixed;
+  inset: 0;
+  pointer-events: none;
+  z-index: 0;
+  overflow: hidden;
+}
+.particle {
+  position: absolute;
+  bottom: -10px;
+  width: 3px; height: 3px;
+  border-radius: 50%;
+  background: var(--accent-soft);
+  opacity: 0;
+  animation: drift linear infinite;
+}
+@keyframes drift {
+  0% { opacity: 0; transform: translateY(0) translateX(0); }
+  10% { opacity: 0.5; }
+  90% { opacity: 0.4; }
+  100% { opacity: 0; transform: translateY(-105vh) translateX(var(--drift-x, 20px)); }
+}
+
+/* 3D tilt cards */
+.tilt-card {
+  transform-style: preserve-3d;
+  transition: transform 0.2s var(--ease-out-expo);
+  will-change: transform;
+}
+.tilt-card .tilt-layer {
+  transform: translateZ(30px);
+}
+
+/* Live author presence widget */
+.presence {
+  position: fixed;
+  bottom: 28px; left: 28px;
+  z-index: 80;
+  display: flex;
+  align-items: center;
+  gap: 10px;
+  padding: 10px 16px 10px 12px;
+  background: color-mix(in srgb, var(--bg-card) 82%, transparent);
+  backdrop-filter: blur(12px);
+  -webkit-backdrop-filter: blur(12px);
+  border: 1px solid var(--border);
+  border-radius: 100px;
+  box-shadow: var(--shadow);
+  font-size: 0.78rem;
+  opacity: 0;
+  transform: translateY(20px);
+  transition: all 0.6s var(--ease-out-expo);
+}
+.presence.show { opacity: 1; transform: translateY(0); }
+.presence-dot {
+  width: 8px; height: 8px;
+  border-radius: 50%;
+  background: #22c55e;
+  box-shadow: 0 0 0 0 rgba(34, 197, 94, 0.5);
+  animation: livePulse 2.5s ease-in-out infinite;
+  flex-shrink: 0;
+}
+@keyframes livePulse {
+  0%, 100% { box-shadow: 0 0 0 0 rgba(34, 197, 94, 0.5); }
+  50% { box-shadow: 0 0 0 6px rgba(34, 197, 94, 0); }
+}
+.presence-text { color: var(--text-soft); white-space: nowrap; }
+.presence-status { color: var(--accent); font-weight: 500; }
+.presence-time { color: var(--text-faint); font-variant-numeric: tabular-nums; }
+.presence-divider { color: var(--border-strong); }
+@media (max-width: 600px) {
+  .presence { bottom: 18px; left: 18px; padding: 8px 12px 8px 10px; font-size: 0.72rem; }
+}
+
+/* Typewriter caret */
+.typewriter-caret {
+  display: inline-block;
+  width: 2px;
+  height: 1.1em;
+  background: var(--accent);
+  margin-left: 3px;
+  vertical-align: text-bottom;
+  animation: blink 1s steps(2) infinite;
+}
+@keyframes blink { 50% { opacity: 0; } }
+.typewriter-done .typewriter-caret { display: none; }
+
+/* Hero parallax layer */
+.hero-badge, .hero h1, .hero-sub, .hero-stats, .hero-cta {
+  transition: transform 0.3s var(--ease-out-expo);
+}
+
+/* Confetti */
+.confetti-piece {
+  position: fixed;
+  width: 9px; height: 14px;
+  z-index: 9998;
+  pointer-events: none;
+  top: -20px;
+  animation: confettiFall 2.6s cubic-bezier(0.2, 0.6, 0.4, 1) forwards;
+}
+@keyframes confettiFall {
+  0% { opacity: 1; transform: translateY(0) rotate(0); }
+  100% { opacity: 0; transform: translateY(110vh) rotate(720deg); }
+}
+
+/* Reduce motion: disable all alive effects */
+@media (prefers-reduced-motion: reduce) {
+  .cursor-dot, .cursor-ring, .aurora, .particles, .presence { display: none !important; }
+  body.cursor-custom { cursor: auto; }
+  .hero::before, .hero::after, .hero-badge::after { animation: none !important; }
+  .hero h1 em { animation: none !important; -webkit-text-fill-color: var(--accent); }
+}
+@media (pointer: coarse) {
+  .cursor-dot, .cursor-ring { display: none !important; }
+  body.cursor-custom { cursor: auto; }
 }
