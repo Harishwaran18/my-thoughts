@@ -128,7 +128,15 @@ def index():
     posts = db.get_all_posts()
     # Pre-render each post's markdown for inline full display on the combined page
     rendered_posts = []
+    total_words = 0
+    total_reads = 0
     for p in posts:
+        rt = reading_time(p["content"])
+        # crude word count from raw markdown
+        import re as _re
+        words = len(_re.sub(r"[#*`>\-\[\]()!]", " ", p["content"]).split())
+        total_words += words
+        total_reads += rt
         rendered_posts.append({
             "id": p["id"],
             "title": p["title"],
@@ -137,12 +145,14 @@ def index():
             "created_at": p["created_at"],
             "content": p["content"],
             "html": render_markdown(p["content"]),
-            "read_time": reading_time(p["content"]),
+            "read_time": rt,
             "excerpt": excerpt(p["content"], 140),
         })
     return render_template(
         "index.html",
         posts=rendered_posts,
+        total_words=total_words,
+        total_reads=total_reads,
         title="My Thoughts",
         description=SITE_TAGLINE,
     )

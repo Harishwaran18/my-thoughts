@@ -103,6 +103,16 @@
     </div>
   </footer>
 
+  <!-- Floating back-to-top with progress ring -->
+  <div class="back-to-top-ring" id="backToTopRing" role="button" aria-label="Back to top">
+    <svg viewBox="0 0 48 48">
+      <circle class="ring-bg" cx="24" cy="24" r="22"></circle>
+      <circle class="ring-progress" cx="24" cy="24" r="22"
+              stroke-dasharray="138.23" stroke-dashoffset="138.23" id="ringProgress"></circle>
+    </svg>
+    <span class="ring-arrow">&uarr;</span>
+  </div>
+
   <script src="{{ url_for('static', filename='js/theme.js') }}"></script>
   <script src="{{ url_for('static', filename='js/main.js') }}"></script>
   {% block scripts %}{% endblock %}
