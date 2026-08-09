@@ -37,15 +37,16 @@ SITE_TAGLINE = "Thoughts on technology, learning, and the craft of building."
 # Falls back to the request host at runtime.
 SITE_URL = "https://work-1-hbbrkzsvlizlzrim.prod-runtime.all-hands.dev"
 
-# Giscus comments config. To enable GitHub-backed comments:
-#   1. Go to your repo Settings > General > check "Discussions"
-#   2. Visit https://giscus.io, enter Harishwaran18/my-thoughts
-#   3. Copy the data-repo-id and data-category-id below
-# Until then, the built-in comments system (SQLite) works automatically.
+# Giscus comments config. Discussions are ENABLED on the repo and IDs are set.
+# Giscus is OFF by default (uses the reliable built-in SQLite comments instead).
+# To switch to GitHub-backed Giscus comments:
+#   1. Visit https://github.com/apps/giscus -> Install -> choose this repo
+#   2. Set GISCUS_ENABLED = True below
 GISCUS_REPO = "Harishwaran18/my-thoughts"
-GISCUS_REPO_ID = "R_kgDOTy-6PQ"      # already discovered — your repo's node ID
+GISCUS_REPO_ID = "R_kgDOTy-6PQ"
 GISCUS_CATEGORY = "Announcements"
-GISCUS_CATEGORY_ID = ""              # set this after enabling Discussions
+GISCUS_CATEGORY_ID = "DIC_kwDOTy-6Pc4DC_iP"
+GISCUS_ENABLED = False
 
 db.init_db(app)
 app.teardown_appcontext(db.close_db)
@@ -121,6 +122,7 @@ def inject_globals():
         "giscus_repo_id": GISCUS_REPO_ID,
         "giscus_category": GISCUS_CATEGORY,
         "giscus_category_id": GISCUS_CATEGORY_ID,
+        "giscus_enabled": GISCUS_ENABLED,
     }
 
 
