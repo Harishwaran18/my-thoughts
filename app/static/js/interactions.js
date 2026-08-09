@@ -66,8 +66,12 @@
   function go(item) {
     closeCmd();
     if (item.url === '#theme') {
-      var t = document.getElementById('themeToggle');
-      if (t) t.click();
+      var modes = ['light', 'dark', 'auto'];
+      var cur = localStorage.getItem('themeMode') || 'auto';
+      var next = modes[(modes.indexOf(cur) + 1) % 3];
+      var sb = document.getElementById('themeSwitcher');
+      if (sb) { var b = sb.querySelector('[data-theme-set="' + next + '"]'); if (b) b.click(); }
+      toast('Theme: ' + next);
     } else {
       window.location.href = item.url;
     }
@@ -118,10 +122,28 @@
       else window.location.href = '/search';
       return;
     }
-    // t toggles theme
+    // t cycles theme
     if (e.key === 't') {
-      var tb = document.getElementById('themeToggle');
-      if (tb) tb.click();
+      var modes = ['light', 'dark', 'auto'];
+      var cur = localStorage.getItem('themeMode') || 'auto';
+      var next = modes[(modes.indexOf(cur) + 1) % 3];
+      var sb = document.getElementById('themeSwitcher');
+      if (sb) { var bb = sb.querySelector('[data-theme-set="' + next + '"]'); if (bb) bb.click(); }
+      toast('Theme: ' + next);
+      return;
+    }
+    // f toggles focus mode
+    if (e.key === 'f') {
+      var ft = document.getElementById('focusToggle');
+      if (ft) ft.click();
+      toast(document.body.classList.contains('focus-mode') ? 'Focus mode on' : 'Focus mode off');
+      return;
+    }
+    // ? shows shortcuts help
+    if (e.key === '?') {
+      e.preventDefault();
+      var so = document.getElementById('shortcutsOverlay');
+      if (so) { so.hidden = false; setTimeout(function(){ so.classList.add('open'); }, 10); }
       return;
     }
     // g then h = home, g then a = about
@@ -392,6 +414,118 @@
     installPrompt.classList.remove('show');
     setTimeout(function () { installPrompt.hidden = true; }, 250);
   });
+
+  /* ---------- Toast notifications ---------- */
+  function toast(msg) {
+    var container = document.getElementById('toastContainer');
+    if (!container) return;
+    var t = document.createElement('div');
+    t.className = 'toast';
+    t.textContent = msg;
+    container.appendChild(t);
+    setTimeout(function () { t.classList.add('show'); }, 10);
+    setTimeout(function () { t.classList.remove('show'); setTimeout(function () { t.remove(); }, 300); }, 2600);
+  }
+  window.__toast = toast;
+
+  /* ---------- Shortcuts overlay close ---------- */
+  var so = document.getElementById('shortcutsOverlay');
+  var soClose = document.getElementById('shortcutsClose');
+  function closeShortcuts() { if (so) { so.classList.remove('open'); setTimeout(function(){ so.hidden = true; }, 200); } }
+  if (soClose) soClose.addEventListener('click', closeShortcuts);
+  if (so) so.addEventListener('click', function (e) { if (e.target === so) closeShortcuts(); });
+  document.addEventListener('keydown', function (e) {
+    if (e.key === 'Escape' && so && !so.hidden) closeShortcuts();
+  });
+
+  /* ---------- Comment form (AJAX) ---------- */
+  var cForm = document.getElementById('commentForm');
+  if (cForm) {
+    var bodyField = cForm.querySelector('textarea[name="body"]');
+    var charCount = document.getElementById('charCount');
+    if (bodyField && charCount) {
+      bodyField.addEventListener('input', function () {
+        charCount.textContent = bodyField.value.length + ' / 2000';
+      });
+    }
+    cForm.addEventListener('submit', function (e) {
+      e.preventDefault();
+      var slug = cForm.getAttribute('data-slug');
+      var author = cForm.querySelector('input[name="author"]').value;
+      var body = bodyField.value;
+      var btn = cForm.querySelector('button[type="submit"]');
+      var orig = btn.textContent;
+      btn.textContent = 'Posting...'; btn.disabled = true;
+      fetch('/post/' + slug + '/comment', {
+        method: 'POST',
+        headers: { 'Content-Type': 'application/x-www-form-urlencoded' },
+        body: 'author=' + encodeURIComponent(author) + '&body=' + encodeURIComponent(body)
+      }).then(function (r) { return r.json(); })
+        .then(function (data) {
+          if (data.ok) {
+            var list = document.getElementById('commentList');
+            var empty = document.getElementById('commentEmpty');
+            if (empty) empty.remove();
+            var li = document.createElement('li');
+            li.className = 'comment-item';
+            li.innerHTML = '<div class="comment-avatar">' + (data.comment.author[0] || 'A').toUpperCase() + '</div>' +
+              '<div class="comment-body"><div class="comment-meta"><span class="comment-author">' +
+              data.comment.author + '</span><span class="comment-date">' + data.comment.created_at +
+              '</span></div><div class="comment-text">' + data.comment.body + '</div></div>';
+            list.appendChild(li);
+            cForm.reset();
+            if (charCount) charCount.textContent = '0 / 2000';
+            toast('Comment posted!');
+            // update heading count
+            var h3 = document.querySelector('#comments h3');
+            if (h3) h3.textContent = data.count + (data.count === 1 ? ' comment' : ' comments');
+          } else {
+            toast(data.msg || 'Could not post comment');
+          }
+          btn.textContent = orig; btn.disabled = false;
+        }).catch(function () { btn.textContent = orig; btn.disabled = false; toast('Network error'); });
+    });
+  }
+
+  /* ---------- Reactions (localStorage) ---------- */
+  var reactions = document.getElementById('reactions');
+  if (reactions) {
+    var rslug = reactions.getAttribute('data-slug');
+    var rkey = 'reactions_' + rslug;
+    // Seed with believable counts
+    var seedKey = 'reactionsSeed_' + rslug;
+    var counts = {};
+    try { counts = JSON.parse(localStorage.getItem(seedKey) || '{}'); } catch (e) {}
+    if (!counts.heart) {
+      counts = { heart: 3 + Math.floor(Math.random() * 12), like: 5 + Math.floor(Math.random() * 18), insight: 2 + Math.floor(Math.random() * 9) };
+      try { localStorage.setItem(seedKey, JSON.stringify(counts)); } catch (e) {}
+    }
+    var userReact = {};
+    try { userReact = JSON.parse(localStorage.getItem(rkey) || '{}'); } catch (e) {}
+    reactions.querySelectorAll('.reaction-btn').forEach(function (btn) {
+      var type = btn.getAttribute('data-reaction');
+      var countEl = btn.querySelector('.reaction-count');
+      countEl.textContent = counts[type] || 0;
+      if (userReact[type]) btn.classList.add('reacted');
+      btn.addEventListener('click', function () {
+        if (userReact[type]) {
+          // unreact
+          delete userReact[type];
+          counts[type] = Math.max(0, (counts[type] || 1) - 1);
+          btn.classList.remove('reacted');
+        } else {
+          userReact[type] = true;
+          counts[type] = (counts[type] || 0) + 1;
+          btn.classList.add('reacted');
+          // little pop animation
+          btn.style.transform = 'translateY(-4px) scale(1.1)';
+          setTimeout(function () { btn.style.transform = ''; }, 200);
+        }
+        countEl.textContent = counts[type];
+        try { localStorage.setItem(rkey, JSON.stringify(userReact)); localStorage.setItem(seedKey, JSON.stringify(counts)); } catch (e) {}
+      });
+    });
+  }
 
   /* ---------- Shared confetti helper ---------- */
   function fireConfetti(n) {

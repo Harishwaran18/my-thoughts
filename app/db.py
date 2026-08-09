@@ -194,6 +194,15 @@ def init_db(app):
                 email TEXT NOT NULL UNIQUE,
                 created_at TIMESTAMP DEFAULT CURRENT_TIMESTAMP
             );
+
+            CREATE TABLE IF NOT EXISTS comments (
+                id INTEGER PRIMARY KEY AUTOINCREMENT,
+                post_id INTEGER NOT NULL,
+                author TEXT NOT NULL,
+                body TEXT NOT NULL,
+                created_at TIMESTAMP DEFAULT CURRENT_TIMESTAMP,
+                FOREIGN KEY (post_id) REFERENCES posts (id)
+            );
             """
         )
         # Migrate: add views column if missing (idempotent)
@@ -365,4 +374,39 @@ def add_subscriber(email):
 def subscriber_count():
     db = get_db()
     row = db.execute("SELECT COUNT(*) AS c FROM subscribers").fetchone()
+    return row["c"] if row else 0
+
+
+def add_comment(post_id, author, body):
+    """Add a comment to a post. Returns the new comment row."""
+    db = get_db()
+    cur = db.execute(
+        "INSERT INTO comments (post_id, author, body) VALUES (?, ?, ?)",
+        (post_id, author, body),
+    )
+    db.commit()
+    return db.execute(
+        "SELECT * FROM comments WHERE id = ?", (cur.lastrowid,)
+    ).fetchone()
+
+
+def get_comments(post_id):
+    db = get_db()
+    return db.execute(
+        "SELECT * FROM comments WHERE post_id = ? ORDER BY created_at ASC",
+        (post_id,),
+    ).fetchall()
+
+
+def delete_comment(comment_id):
+    db = get_db()
+    db.execute("DELETE FROM comments WHERE id = ?", (comment_id,))
+    db.commit()
+
+
+def comment_count(post_id):
+    db = get_db()
+    row = db.execute(
+        "SELECT COUNT(*) AS c FROM comments WHERE post_id = ?", (post_id,)
+    ).fetchone()
     return row["c"] if row else 0

@@ -23,7 +23,7 @@
       <div class="divider"></div>
       <div class="hero-stat"><div class="num" data-count="{{ total_words }}">0</div><div class="label">Words</div></div>
       <div class="divider"></div>
-      <div class="hero-stat"><div class="num" data-count="{{ total_views }}">0</div><div class="label">Views</div></div>
+      <div class="hero-stat"><div class="num" data-count="{{ tag_count }}">0</div><div class="label">Tags</div></div>
     </div>
     <div class="hero-cta">
       <a href="#writing" class="btn btn-lg">Start reading</a>
@@ -69,7 +69,7 @@
     {% for post in posts %}
     <article class="combined-post" id="{{ post.slug }}">
       <header class="combined-post-head">
-        <div class="post-eyebrow">{{ format_date(post.created_at) }} &middot; {{ post.read_time }} min read &middot; {{ post.views }} views</div>
+        <div class="post-eyebrow">{{ format_date(post.created_at) }} &middot; {{ post.read_time }} min read &middot; {{ post.comment_count }} comment{{ '' if post.comment_count == 1 else 's' }}</div>
         <h2 class="combined-post-title">
           <a href="{{ url_for('post', slug=post.slug) }}">{{ post.title }}</a>
         </h2>

@@ -73,6 +73,23 @@
     </section>
     {% endif %}
 
+    <!-- Reactions -->
+    <div class="reactions" id="reactions" data-slug="{{ post.slug }}">
+      <span class="reactions-label">How was this?</span>
+      <button class="reaction-btn" data-reaction="heart" aria-label="Love it">
+        <svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><path d="M20.84 4.61a5.5 5.5 0 00-7.78 0L12 5.67l-1.06-1.06a5.5 5.5 0 00-7.78 7.78l1.06 1.06L12 21.23l7.78-7.78 1.06-1.06a5.5 5.5 0 000-7.78z"/></svg>
+        <span class="reaction-count">0</span>
+      </button>
+      <button class="reaction-btn" data-reaction="like" aria-label="Helpful">
+        <svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><path d="M7 10v12M15 5.88L14 10h5.83a2 2 0 011.92 2.56l-2.33 8A2 2 0 0117.5 22H7"/></svg>
+        <span class="reaction-count">0</span>
+      </button>
+      <button class="reaction-btn" data-reaction="insight" aria-label="Insightful">
+        <svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><path d="M9 18h6M10 22h4M12 2a7 7 0 00-4 12.7c.6.6 1 1.4 1 2.3v1h6v-1c0-.9.4-1.7 1-2.3A7 7 0 0012 2z"/></svg>
+        <span class="reaction-count">0</span>
+      </button>
+    </div>
+
     {% if giscus_repo_id and giscus_category_id %}
     <section class="comments">
       <h3>Comments</h3>
@@ -93,9 +110,43 @@
       </script>
     </section>
     {% else %}
-    <section class="comments comments-soon">
-      <h3>Comments</h3>
-      <p>Comments coming soon — powered by GitHub Discussions. <a href="https://giscus.io" target="_blank" rel="noopener">Learn how to enable</a>.</p>
+    <section class="comments" id="comments">
+      <h3>{{ comment_count }} comment{{ '' if comment_count == 1 else 's' }}</h3>
+
+      <form class="comment-form" id="commentForm" data-slug="{{ post.slug }}">
+        <div class="comment-form-row">
+          <input type="text" name="author" placeholder="Your name (optional)" maxlength="60">
+        </div>
+        <textarea name="body" rows="3" placeholder="Share your thoughts..." maxlength="2000" required></textarea>
+        <div class="comment-form-foot">
+          <span class="char-count" id="charCount">0 / 2000</span>
+          <button type="submit" class="btn btn-sm">Post comment</button>
+        </div>
+      </form>
+
+      <ul class="comment-list" id="commentList">
+        {% for c in comments %}
+        <li class="comment-item" data-id="{{ c.id }}">
+          <div class="comment-avatar">{{ c.author[0] | upper }}</div>
+          <div class="comment-body">
+            <div class="comment-meta">
+              <span class="comment-author">{{ c.author }}</span>
+              <span class="comment-date">{{ format_date(c.created_at) }}</span>
+              {% if session.logged_in %}
+                <form action="{{ url_for('admin_delete_comment', comment_id=c.id) }}" method="post"
+                      onsubmit="return confirm('Delete this comment?');" class="comment-delete-form">
+                  <button type="submit" class="comment-delete" aria-label="Delete">&times;</button>
+                </form>
+              {% endif %}
+            </div>
+            <div class="comment-text">{{ c.body | safe }}</div>
+          </div>
+        </li>
+        {% endfor %}
+        {% if comment_count == 0 %}
+        <li class="comment-empty" id="commentEmpty">Be the first to share your thoughts.</li>
+        {% endif %}
+      </ul>
     </section>
     {% endif %}
 

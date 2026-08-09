@@ -1,28 +1,35 @@
 (function () {
-  const toggle = document.getElementById('themeToggle');
   const root = document.documentElement;
+  const switcher = document.getElementById('themeSwitcher');
 
-  function setTheme(theme) {
-    root.setAttribute('data-theme', theme);
-    try { localStorage.setItem('theme', theme); } catch (e) {}
-  }
-
-  // Determine initial theme: saved preference > auto by local time > OS preference
-  const saved = localStorage.getItem('theme');
-  if (saved) {
-    setTheme(saved);
-  } else {
+  function applyAuto() {
     const hour = new Date().getHours();
-    // Light 6am–7pm, dark otherwise — auto day/night
     const autoTheme = (hour >= 6 && hour < 19) ? 'light' : 'dark';
     const prefersDark = window.matchMedia('(prefers-color-scheme: dark)').matches;
-    setTheme(prefersDark && autoTheme === 'light' ? 'dark' : autoTheme);
+    root.setAttribute('data-theme', (prefersDark && autoTheme === 'light') ? 'dark' : autoTheme);
   }
 
-  if (toggle) {
-    toggle.addEventListener('click', function () {
-      const current = root.getAttribute('data-theme');
-      setTheme(current === 'dark' ? 'light' : 'dark');
+  function setMode(mode) {
+    // mode: 'light' | 'dark' | 'auto'
+    try { localStorage.setItem('themeMode', mode); } catch (e) {}
+    if (mode === 'auto') applyAuto();
+    else root.setAttribute('data-theme', mode);
+    if (switcher) {
+      switcher.querySelectorAll('button').forEach(function (b) {
+        b.classList.toggle('active', b.getAttribute('data-theme-set') === mode);
+      });
+    }
+  }
+
+  const saved = localStorage.getItem('themeMode') || 'auto';
+  setMode(saved);
+
+  if (switcher) {
+    switcher.querySelectorAll('button').forEach(function (btn) {
+      btn.addEventListener('click', function () { setMode(btn.getAttribute('data-theme-set')); });
     });
   }
+
+  // Re-apply auto every 10 min (in case the hour boundary crosses)
+  if (saved === 'auto') setInterval(function () { if (localStorage.getItem('themeMode') === 'auto') applyAuto(); }, 600000);
 })();

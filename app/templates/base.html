@@ -52,10 +52,17 @@
         {% else %}
           <a href="{{ url_for('login') }}">Login</a>
         {% endif %}
-        <button class="theme-toggle" id="themeToggle" aria-label="Toggle theme">
-          <span class="theme-icon-light">&#9728;</span>
-          <span class="theme-icon-dark">&#9789;</span>
-        </button>
+        <div class="theme-switcher" id="themeSwitcher" role="group" aria-label="Theme">
+          <button data-theme-set="light" aria-label="Light theme" title="Light">
+            <svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><circle cx="12" cy="12" r="5"/><path d="M12 1v2M12 21v2M4.22 4.22l1.42 1.42M18.36 18.36l1.42 1.42M1 12h2M21 12h2M4.22 19.78l1.42-1.42M18.36 5.64l1.42-1.42"/></svg>
+          </button>
+          <button data-theme-set="auto" aria-label="Auto theme" title="Auto (time of day)">
+            <svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><circle cx="12" cy="12" r="9"/><path d="M12 3a9 9 0 010 18z" fill="currentColor"/></svg>
+          </button>
+          <button data-theme-set="dark" aria-label="Dark theme" title="Dark">
+            <svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><path d="M21 12.79A9 9 0 1111.21 3 7 7 0 0021 12.79z"/></svg>
+          </button>
+        </div>
       </nav>
     </div>
   </header>
@@ -170,6 +177,27 @@
     <span>Install My Thoughts for a faster, app-like reading experience.</span>
     <button class="btn btn-sm" id="installBtn">Install</button>
     <button class="install-dismiss" id="installDismiss" aria-label="Dismiss">&times;</button>
+  </div>
+
+  <!-- Toast notifications -->
+  <div class="toast-container" id="toastContainer"></div>
+
+  <!-- Keyboard shortcuts help -->
+  <div class="shortcuts-overlay" id="shortcutsOverlay" hidden>
+    <div class="shortcuts-box" style="position:relative;">
+      <button class="shortcuts-close" id="shortcutsClose" aria-label="Close">&times;</button>
+      <h3>Keyboard shortcuts</h3>
+      <ul class="shortcuts-list">
+        <li><span class="desc">Command palette</span><kbd>Ctrl K</kbd></li>
+        <li><span class="desc">Search</span><kbd>/</kbd></li>
+        <li><span class="desc">Toggle theme</span><kbd>t</kbd></li>
+        <li><span class="desc">Next / prev post</span><kbd>j</kbd> <kbd>k</kbd></li>
+        <li><span class="desc">Go home / about</span><kbd>g</kbd> <kbd>h</kbd>/<kbd>a</kbd></li>
+        <li><span class="desc">Back to top</span><kbd>g</kbd> <kbd>t</kbd></li>
+        <li><span class="desc">Focus mode</span><kbd>f</kbd></li>
+        <li><span class="desc">Show this help</span><kbd>?</kbd></li>
+      </ul>
+    </div>
   </div>
 
   <script src="{{ url_for('static', filename='js/theme.js') }}"></script>

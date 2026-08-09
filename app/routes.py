@@ -161,7 +161,7 @@ def index():
             "html": render_markdown(p["content"]),
             "read_time": rt,
             "excerpt": excerpt(p["content"], 140),
-            "views": p["views"] or 0,
+            "comment_count": db.comment_count(p["id"]),
         })
     # Build command palette index (posts + tags + actions)
     cmd_index = []
@@ -180,7 +180,7 @@ def index():
         posts=rendered_posts,
         total_words=total_words,
         total_reads=total_reads,
-        total_views=db.total_views(),
+        tag_count=len(db.get_all_tags()),
         cmd_index=cmd_index,
         title="My Thoughts",
         description=SITE_TAGLINE,
@@ -192,18 +192,53 @@ def post(slug):
     post = db.get_post(slug)
     if post is None:
         abort(404)
-    db.increment_views(slug)
     related = db.get_related_posts(post, limit=3)
     toc = extract_toc(post["content"])
+    comments = db.get_comments(post["id"])
     return render_template(
         "post.html",
         post=post,
         related=related,
         toc=toc,
+        comments=comments,
+        comment_count=len(comments),
         title=post["title"],
         description=excerpt(post["content"], 160),
         og_image_url=f"{site_base_url()}/og/{slug}.png",
     )
+
+
+@app.route("/post/<slug>/comment", methods=["POST"])
+def add_comment_route(slug):
+    """Add a comment to a post."""
+    post = db.get_post(slug)
+    if post is None:
+        return jsonify({"ok": False, "msg": "Post not found."}), 404
+    author = (request.form.get("author") or "").strip()[:60] or "Anonymous"
+    body = (request.form.get("body") or "").strip()
+    if not body or len(body) > 2000:
+        return jsonify({"ok": False, "msg": "Please write a comment (max 2000 chars)."}), 400
+    # basic HTML-escape
+    import html as _html
+    author = _html.escape(author)
+    body = _html.escape(body).replace("\n", "<br>")
+    c = db.add_comment(post["id"], author, body)
+    return jsonify({
+        "ok": True,
+        "comment": {
+            "id": c["id"], "author": c["author"], "body": c["body"],
+            "created_at": format_date(c["created_at"]),
+        },
+        "count": db.comment_count(post["id"]),
+    })
+
+
+@app.route("/admin/comment/<int:comment_id>/delete", methods=["POST"])
+@login_required
+def admin_delete_comment(comment_id):
+    db.delete_comment(comment_id)
+    flash("Comment deleted.", "success")
+    return redirect(request.referrer or url_for("admin"))
 
 
 @app.route("/og/<slug>.png")
